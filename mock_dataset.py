@@ -36,11 +36,11 @@ class VLDataset(Dataset):
 def get_mock_dataset(test_split=0.2):
     vocab_size = 5
     num_sequences = 20
-    max_sequence_length = 100
+    max_sequence_length = 40
 
     sequences = []
     for _ in range(num_sequences):
-        sequence_length = np.random.randint(max_sequence_length)
+        sequence_length = np.random.randint(max_sequence_length - 2) + 2
         sequences.append(np.ones((sequence_length), dtype=int) * np.random.randint(vocab_size))
 
     # Split
@@ -48,6 +48,6 @@ def get_mock_dataset(test_split=0.2):
     train_seq = sequences[:split_idx]
     test_seq = sequences[split_idx:]
 
-    train_dataset = VLDataset(sequences, vocab_size)
-    test_dataset = VLDataset(sequences, vocab_size)
+    train_dataset = VLDataset(train_seq, vocab_size)
+    test_dataset = VLDataset(test_seq, vocab_size)
     return train_dataset, test_dataset, vocab_size
