@@ -4,8 +4,9 @@ import torch.optim as optim
 import torch
 import torch.nn.functional as F
 import numpy as np
-from mock_dataset import get_mock_dataset
-from lstm_chord_model import LSTMChordModel
+from data.dataset import get_mock_dataset
+from data.chord_vocab import get_dataset
+from models.lstm_chord_model import LSTMChordModel
 import pdb
 
 # Andrew's
@@ -53,15 +54,17 @@ def evaluate_model(model, test_dataset):
 
 if __name__ == "__main__":
     # Get dataset
-    train_dataset, test_dataset, vocab_size = get_mock_dataset()
-    train_loader = DataLoader(train_dataset, batch_size=3, shuffle=True) 
+    batch_size = 5
+    # train_dataset, test_dataset, vocab_size = get_mock_dataset()
+    train_dataset, test_dataset, vocab_size = get_dataset(choice=1, test_split=0.2)
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True) 
 
     # Create model
     model = LSTMChordModel(vocab_size, lstm_hidden_size=16)
 
     # Define training variables
     optimizer = optim.Adam(model.parameters(), lr=0.01)
-    epochs = 5
+    epochs = 1
 
     # TRAIN
     for epoch in range(epochs):
@@ -69,8 +72,9 @@ if __name__ == "__main__":
         for batch_idx, batch in enumerate(train_loader):
             inputs = batch["input"].float()
             lengths = batch["length"]
-            targets = batch["target"][:, :max(lengths)]            
-
+            targets = batch["target"][:, :max(lengths)] 
+            if 0 in lengths:           
+                pdb.set_trace()
             optimizer.zero_grad()
             outputs = model(inputs, lengths)
 
