@@ -44,6 +44,7 @@ def get_mock_dataset(test_split=0.2):
         sequences.append(np.ones((sequence_length), dtype=int) * np.random.randint(vocab_size))
 
     # Split
+    # TODO make split random
     split_idx = int(num_sequences*(1-test_split))
     train_seq = sequences[:split_idx]
     test_seq = sequences[split_idx:]
