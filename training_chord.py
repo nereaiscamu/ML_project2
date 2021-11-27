@@ -5,7 +5,7 @@ import torch
 import torch.nn.functional as F
 import numpy as np
 from data.dataset import get_mock_dataset
-from data.chord_vocab import get_dataset
+from data.chord_vocab import get_dataset, get_dataset_multi_hot
 from models.lstm_chord_model import LSTMChordModel, LSTMChordModelEmbedding
 import pdb
 
@@ -57,7 +57,8 @@ if __name__ == "__main__":
     batch_size = 5
 
     # train_dataset, test_dataset, vocab_size = get_mock_dataset()
-    train_dataset, test_dataset, vocab_size = get_dataset(choice=1, test_split=0.2)
+    #train_dataset, test_dataset, vocab_size = get_dataset(choice=1, test_split=0.2)
+    train_dataset, test_dataset, vocab_size = get_dataset_multi_hot(choice=2, test_split=0.2)
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True) 
 
     # Create model
@@ -66,7 +67,7 @@ if __name__ == "__main__":
 
     # Define training variables
     optimizer = optim.Adam(model.parameters(), lr=0.01)
-    epochs = 20
+    epochs = 1
 
     # TRAIN
     for epoch in range(epochs):
