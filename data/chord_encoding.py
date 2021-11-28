@@ -1,7 +1,7 @@
 from sqlalchemy import create_engine
 import pandas as pd
 import numpy as np
-from data.dataset import VLDataset, MultiHot_VLDataset
+from data.dataset import OneHot_VLDataset, MultiHot_VLDataset
 import pdb
 
 '''
@@ -128,30 +128,7 @@ def get_dataset2(beats):
     beats.loc[ beats['complete_pitch'] == 'Cb', "final_pitch"] = 'B'
 
     ''' Now only 12 pitches + No Chord, map it to the MIDI numeric notation for each pitch'''
-    '''
-    conditions = [
-        beats['final_pitch']=='A#', 
-        beats['final_pitch']=='G', 
-        beats['final_pitch']=='C', 
-        beats['final_pitch']=='F', 
-        beats['final_pitch']=='D#', 
-        beats['final_pitch']=='G#', 
-        beats['final_pitch']=='D', 
-        beats['final_pitch']=='A', 
-        beats['final_pitch']=='F#', 
-        beats['final_pitch']=='B', 
-        beats['final_pitch']=='E', 
-        beats['final_pitch']=='C#', 
-        beats['final_pitch']=='N']
-    choices = [10, 7, 0, 5, 3, 8, 2, 9, 6, 11, 4, 1, 12]
 
-
-    # chord numbers have been set following MIDI notation, 
-    #without taking into acount octaves, minor/minor chords, neither the bass pitch
-
-    beats["chord_num"] = np.select(conditions, choices) 
-    beats = beats[['beatid', 'melid', 'chord', 'final_pitch', 'chord_num', 'chord_info']] #remove useless columns
-    '''
     beats = beats[['beatid', 'melid', 'chord', 'final_pitch', 'chord_info']] #remove useless columns
 
     # Process chord info other than root note
@@ -177,8 +154,10 @@ def get_dataset2(beats):
 
     unique_chords = pd.unique(beats['new_chord'])
     unique_pitch = pd.unique(beats['final_pitch'])
+    unique_minor = pd.unique(beats['minor'])
     unique_chord_info = pd.unique(beats['chord_info'])
-    vocab_sizes = [len(unique_pitch), 1, len(unique_chord_info)]
+    #vocab_sizes = [len(unique_pitch), 1, len(unique_chord_info)]   # FIXME should use a flag instead of a 2-dim one-hot?
+    vocab_sizes = [len(unique_pitch), len(unique_minor), len(unique_chord_info)]
     
     # Encode each final pitch to a number by order of appearnce
     final_pitch_map = {}
@@ -198,13 +177,14 @@ def get_dataset2(beats):
         new_chord_map[c] = i
     beats['new_chord_num'] = beats['new_chord'].map(new_chord_map)
 
+    target_size = len(unique_chords)
     print('\nUsing a total chord vocab size of %d (One-hot)' % len(unique_chords))
     print('Multi-hot input:')
     print('\t(1): Root pitch and #. Vocab size of %d' % len(unique_pitch))
-    print('\t(2): Whether or not it is minor. Binary flag, size 1')
+    print('\t(2): Whether or not it is minor. Binary flag, size %d' % len(unique_minor))
     print('\t(3): Other chord info. Vocab size of %d\n' % len(unique_chord_info))
 
-    return beats, vocab_sizes
+    return beats, vocab_sizes, target_size
 
 
 def get_dataset(choice=1, test_split=0.2):
@@ -238,8 +218,8 @@ def get_dataset(choice=1, test_split=0.2):
     train_seq = sequences[:split_idx]
     test_seq = sequences[split_idx:]
 
-    train_dataset = VLDataset(train_seq, vocab_size)
-    test_dataset = VLDataset(test_seq, vocab_size)
+    train_dataset = OneHot_VLDataset(train_seq, vocab_size)
+    test_dataset = OneHot_VLDataset(test_seq, vocab_size)
 
     return train_dataset, test_dataset, vocab_size
 
@@ -257,7 +237,7 @@ def get_dataset_multi_hot(choice=2, test_split=0.2):
     beats_raw = pd.read_sql("beats", engine)
 
     if choice == 2:
-        beats, vocab_sizes = get_dataset2(beats_raw)
+        beats, vocab_sizes, target_size = get_dataset2(beats_raw)
 
     sequences = []          # store chord as multi-hot
     target_sequence = []   # store chord as one-hot
@@ -267,12 +247,14 @@ def get_dataset_multi_hot(choice=2, test_split=0.2):
     for i in range(1, num_mels+1):
         song = beats.loc[beats['melid'] == i]
         seq_pitch = song['final_pitch_num'].to_numpy()
-        seq_minor = song['minor'].to_numpy()
-        seq_chord_info = song['chord_info_num'].to_numpy()
-        seq_one_hot = song['new_chord_num'].to_numpy()
-        if len(seq_pitch) > 1:
-            sequences.append(np.array([seq_pitch, seq_minor, seq_chord_info]))
-            target_sequence.append(seq_one_hot)
+
+        if choice == 2:
+            seq_minor = song['minor'].to_numpy()
+            seq_chord_info = song['chord_info_num'].to_numpy()
+            seq_one_hot = song['new_chord_num'].to_numpy()
+            if len(seq_pitch) > 1:
+                sequences.append(np.array([seq_pitch, seq_minor, seq_chord_info]).T)
+                target_sequence.append(seq_one_hot)
 
     # Split
     split_idx = int(len(sequences)*(1-test_split))
@@ -284,8 +266,8 @@ def get_dataset_multi_hot(choice=2, test_split=0.2):
     train_dataset = MultiHot_VLDataset(train_seq, train_target_seq, vocab_sizes)
     test_dataset = MultiHot_VLDataset(test_seq, test_target_seq, vocab_sizes)
 
-    vocab_size = sum(vocab_sizes)
-    return train_dataset, test_dataset, vocab_size
+    input_size = sum(vocab_sizes)
+    return train_dataset, test_dataset, input_size, target_size
 
 
 if __name__ == "__main__":
