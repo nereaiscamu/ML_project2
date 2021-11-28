@@ -4,9 +4,9 @@ import torch.optim as optim
 import torch
 import torch.nn.functional as F
 import numpy as np
-from data.dataset import get_mock_dataset
-from data.chord_vocab import get_dataset
-from models.lstm_chord_model import LSTMChordModel, LSTMChordModelEmbedding
+import matplotlib.pyplot as plt
+from data.chord_encoding import get_dataset, get_dataset_multi_hot
+from models.lstm_chord_models import LSTMChord, LSTMChordEmbedding, LSTMChordEmbedding_Multihot
 import pdb
 
 # Andrew's
@@ -55,42 +55,53 @@ def evaluate_model(model, test_dataset):
 if __name__ == "__main__":
     # Get dataset
     batch_size = 5
+    avg_loss_steps = 20
 
     # train_dataset, test_dataset, vocab_size = get_mock_dataset()
-    train_dataset, test_dataset, vocab_size = get_dataset(choice=1, test_split=0.2)
+    #train_dataset, test_dataset, vocab_size = get_dataset(choice=1, test_split=0.2)
+    train_dataset, test_dataset, input_size, target_size = get_dataset_multi_hot(choice=2, test_split=0.2)
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True) 
 
     # Create model
-    model = LSTMChordModel(vocab_size, lstm_hidden_size=16)
-    #model = LSTMChordModelEmbedding(vocab_size, embed_size=16, lstm_hidden_size=16)
+    #model = LSTMChord(vocab_size, lstm_hidden_size=16)
+    #model = LSTMChordEmbedding(vocab_size, embed_size=16, lstm_hidden_size=16)
+    model = LSTMChordEmbedding_Multihot(input_size, embed_size=16, lstm_hidden_size=16, target_size=target_size)
 
     # Define training variables
     optimizer = optim.Adam(model.parameters(), lr=0.01)
-    epochs = 20
+    epochs = 2
+    losses = []
+    train_accuracies = []
+    test_accuracies = []
 
     # TRAIN
     for epoch in range(epochs):
         print("EPOCH", epoch)
+        epoch_loss = 0
+        avg_loss = 0
         for batch_idx, batch in enumerate(train_loader):
             inputs = batch["input"].float()
             lengths = batch["length"]
             targets = batch["target"][:, :max(lengths)] 
-            if 0 in lengths:           
-                pdb.set_trace()
+
             optimizer.zero_grad()
             outputs = model(inputs, lengths)
 
-            #print(inputs.shape)
-            #print(targets.shape)
-            #print(outputs.shape)
-
             loss = get_loss_vl(outputs, targets)
-            print("Loss:", loss.item())
-            #acc = get_accuracy_vl(outputs, targets)
-            #print("Acc:", acc.item())
-
+   
             loss.backward()
             optimizer.step() 
+
+            epoch_loss += loss.item()/len(train_dataset)
+            avg_loss += loss.item()
+            #print("Loss:", loss.item())
+            if (batch_idx+1) % avg_loss_steps == 0:
+                losses.append(avg_loss / avg_loss_steps)
+                avg_loss = 0
+
+        print("Epoch avg loss: %.4f" % epoch_loss)
+        train_accuracies.append(evaluate_model(model, train_dataset))
+        test_accuracies.append(evaluate_model(model, test_dataset))
 
     print('*** Training done! ***')
 
@@ -99,3 +110,13 @@ if __name__ == "__main__":
     print('Train accuracy:\t%.2f' % tr_acc)
     te_acc = evaluate_model(model, test_dataset)
     print('Test accuracy:\t%.2f' % te_acc)
+
+    plt.plot(losses)
+    plt.ylabel('Training loss')
+    plt.show()
+    plt.plot(train_accuracies, label='Train')
+    plt.plot(test_accuracies, label='Test')
+    plt.ylabel('Accuracy (%)')
+    plt.xlabel('Epoch')
+    plt.legend()
+    plt.show()
