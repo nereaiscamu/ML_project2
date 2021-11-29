@@ -1,8 +1,13 @@
 from sqlalchemy import create_engine
 import pandas as pd
 import numpy as np
-from data.dataset import OneHot_VLDataset, MultiHot_VLDataset
+from dataset import OneHot_VLDataset, MultiHot_VLDataset
 import pdb
+
+import sys
+sys.path.append('../')
+from combine_melody_beats import encode_pitch
+
 
 '''
 path = "wjazzd.db" # REPLACE THIS WITH PATH TO FILE
@@ -88,16 +93,13 @@ def get_dataset1(beats):
     return beats
 
 
-def get_dataset2(beats):
-    '''
-    Dataset 2: Multi-hot. Combination of 3 One-Hot vectors:
+def encode_chords(beats):
+    """
+    Encode the chords:
         (1): Root pitch and '#'. Vocab size = 13
-        (2): 
-        (3):
-        
-    '''
-    beats['chord'].replace('', np.nan, inplace=True)
-    beats = beats[['beatid', 'melid', 'chord']].dropna()
+        (2): Wether or not it is minor
+        (3): Other chord info
+    """
     beats = beats.assign(root_pitch = beats['chord'].str.slice(stop=1))
 
     # the first letter is always the root note, 
@@ -128,8 +130,6 @@ def get_dataset2(beats):
 
     ''' Now only 12 pitches + No Chord, map it to the MIDI numeric notation for each pitch'''
 
-    beats = beats[['beatid', 'melid', 'chord', 'final_pitch', 'chord_info']] #remove useless columns
-
     # Process chord info other than root note
     beats['chord_info'] = beats['chord_info'].str.replace('j','')
     beats['chord_info'] = beats['chord_info'].str.replace('+','')
@@ -144,12 +144,27 @@ def get_dataset2(beats):
 
     # Save new chord 
     beats['new_chord'] = beats['final_pitch'].str.cat(beats['chord_info'])
-    unique_chord_info_and_minor = pd.unique(beats['chord_info'])
 
     # Separate minor from chord_info
     beats['minor'] = 0
     beats.loc[beats['chord_info'].str.contains('-') == True, 'minor' ] = 1
     beats['chord_info'] = beats['chord_info'].str.replace('-','')
+
+    return beats
+
+
+def get_dataset2(beats):
+    '''
+    Dataset 2: Multi-hot. Combination of 3 One-Hot vectors:
+        (1): Root pitch and '#'. Vocab size = 13
+        (2): 
+        (3):
+        
+    '''
+    beats['chord'].replace('', np.nan, inplace=True)
+    beats = beats[['beatid', 'melid', 'chord']].dropna()
+
+    beats = encode_chords(beats)
 
     unique_chords = pd.unique(beats['new_chord'])
     unique_pitch = pd.unique(beats['final_pitch'])
@@ -186,7 +201,57 @@ def get_dataset2(beats):
     return beats, vocab_sizes, target_size
 
 
-def get_dataset(choice=1, test_split=0.2):
+def get_dataset3(melody, beats):
+    """
+    Dataset 3: Multi-hot. Combination of 4 One-Hot vectors:
+        (1): Root pitch and '#'. Vocab size = 13
+        (2): Wether or not it is minor
+        (3): Other chord info
+        (4): Melody pitch
+    """
+    beats = beats[['beatid', 'melid', 'bar', 'beat', 'chord', 'bass_pitch']]
+
+    beats_encoded = encode_chords(beats)
+    mel_beats = encode_pitch(melody, beats_encoded)
+
+    unique_chords = pd.unique(mel_beats['new_chord'])
+    unique_pitch = pd.unique(mel_beats['final_pitch'])
+    unique_minor = pd.unique(mel_beats['minor'])
+    unique_chord_info = pd.unique(mel_beats['chord_info'])
+    unique_pitch_melody = pd.unique(mel_beats['pitch_encoded'])
+    vocab_sizes = [len(unique_pitch), len(unique_minor), len(unique_chord_info), len(unique_pitch_melody)]
+    
+    # Encode each final pitch to a number by order of appearnce
+    final_pitch_map = {}
+    for i, c in enumerate(unique_pitch):
+        final_pitch_map[c] = i
+    mel_beats['final_pitch_num'] = mel_beats['final_pitch'].map(final_pitch_map)
+
+    # Encode chord info
+    chord_info_map = {}
+    for i, c in enumerate(unique_chord_info):
+        chord_info_map[c] = i
+    mel_beats['chord_info_num'] = mel_beats['chord_info'].map(chord_info_map)
+
+    # Encode new chord
+    new_chord_map = {}
+    for i, c in enumerate(unique_chords):
+        new_chord_map[c] = i
+    mel_beats['new_chord_num'] = mel_beats['new_chord'].map(new_chord_map)
+
+    target_size = len(unique_chords)
+    print('\nUsing a total chord vocab size of %d (One-hot)' % len(unique_chords))
+    print('Multi-hot input:')
+    print('\t(1): Root pitch and #. Vocab size of %d' % len(unique_pitch))
+    print('\t(2): Whether or not it is minor. Binary flag, size %d' % len(unique_minor))
+    print('\t(3): Other chord info. Vocab size of %d' % len(unique_chord_info))
+    print('\t(4): Melody pitch. Vocab size of %d\n' % len(unique_pitch_melody))
+
+    return mel_beats, vocab_sizes, target_size
+
+
+
+def get_dataset_one_hot(choice=1, test_split=0.2):
     '''
     Generate train and test dataset. Based on dataset choice
     choice:
@@ -221,6 +286,7 @@ def get_dataset(choice=1, test_split=0.2):
 
     return train_dataset, test_dataset, vocab_size
 
+
 def get_dataset_multi_hot(choice=2, test_split=0.2):
     '''
     Generate train and test dataset. Based on dataset choice
@@ -228,13 +294,15 @@ def get_dataset_multi_hot(choice=2, test_split=0.2):
         1: Basic dataset with only root pitches and '#'. Vocab size = 13. One-hot
     '''
 
-    path = "data/wjazzd.db" # REPLACE THIS WITH PATH TO FILE
-    #path = "wjazzd.db" # REPLACE THIS WITH PATH TO FILE
+    path = "./Data/wjazzd.db" # REPLACE THIS WITH PATH TO FILE
     engine = create_engine(f"sqlite:///{path}")
     beats_raw = pd.read_sql("beats", engine)
+    melody_raw = pd.read_sql("melody", engine)
 
     if choice == 2:
         beats, vocab_sizes, target_size = get_dataset2(beats_raw)
+    if choice == 3:
+        beats, vocab_sizes, target_size = get_dataset3(melody_raw, beats_raw)
 
     sequences = []          # store chord as multi-hot
     target_sequence = []   # store chord as one-hot
@@ -245,12 +313,21 @@ def get_dataset_multi_hot(choice=2, test_split=0.2):
         song = beats.loc[beats['melid'] == i]
         seq_pitch = song['final_pitch_num'].to_numpy()
 
-        if choice == 2:
+        if choice == 2:        
             seq_minor = song['minor'].to_numpy()
             seq_chord_info = song['chord_info_num'].to_numpy()
             seq_one_hot = song['new_chord_num'].to_numpy()
             if len(seq_pitch) > 1:
                 sequences.append(np.array([seq_pitch, seq_minor, seq_chord_info]).T)
+                target_sequence.append(seq_one_hot)
+        if choice == 3:
+            seq_minor = song['minor'].to_numpy()
+            seq_chord_info = song['chord_info_num'].to_numpy()
+            seq_one_hot = song['new_chord_num'].to_numpy()
+            seq_pitch_mel = song['pitch_encoded'].to_numpy()
+            #seq_bass_pitch_mel = song['bass_pitch_encoded'].to_numpy()
+            if len(seq_pitch) > 1:
+                sequences.append(np.array([seq_pitch, seq_minor, seq_chord_info, seq_pitch_mel]).T)
                 target_sequence.append(seq_one_hot)
 
     # Split
@@ -268,5 +345,5 @@ def get_dataset_multi_hot(choice=2, test_split=0.2):
 
 
 if __name__ == "__main__":
-    get_dataset_multi_hot(choice=2)
+    get_dataset_multi_hot(choice=3)
     
