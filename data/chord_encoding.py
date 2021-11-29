@@ -7,7 +7,6 @@ import pdb
 '''
 path = "wjazzd.db" # REPLACE THIS WITH PATH TO FILE
 engine = create_engine(f"sqlite:///{path}")
-
 beats = pd.read_sql("beats", engine)
 '''
 ### THIS PART WAS ONLY DATA EXPLORING
@@ -192,7 +191,6 @@ def get_dataset(choice=1, test_split=0.2):
     Generate train and test dataset. Based on dataset choice
     choice:
         1: Basic dataset with only root pitches and '#'. Vocab size = 13. One-hot
-
     '''
 
     path = "data/wjazzd.db" # REPLACE THIS WITH PATH TO FILE
@@ -228,7 +226,6 @@ def get_dataset_multi_hot(choice=2, test_split=0.2):
     Generate train and test dataset. Based on dataset choice
     choice:
         1: Basic dataset with only root pitches and '#'. Vocab size = 13. One-hot
-
     '''
 
     path = "data/wjazzd.db" # REPLACE THIS WITH PATH TO FILE
@@ -273,5 +270,3 @@ def get_dataset_multi_hot(choice=2, test_split=0.2):
 if __name__ == "__main__":
     get_dataset_multi_hot(choice=2)
     
-
-
