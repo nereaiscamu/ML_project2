@@ -21,8 +21,8 @@ def encode_pitch(df_melody, df_beats, pitch_sequence=False):
     df_mel_beats['pitch_encoded'] = np.mod(df_mel_beats['pitch'], 12)
     df_mel_beats['bass_pitch_encoded'] = np.mod(df_mel_beats['bass_pitch'], 12)
 
-    df_mel_beats['pitch_encoded'] = df_mel_beats['pitch_encoded'].astype(int)
-    df_mel_beats['bass_pitch_encoded'] = df_mel_beats['bass_pitch_encoded'].astype(int)
+    #df_mel_beats['pitch_encoded'] = df_mel_beats['pitch_encoded'].astype(int)
+    #df_mel_beats['bass_pitch_encoded'] = df_mel_beats['bass_pitch_encoded'].astype(int)
 
     ## Encode pitch for every chord of melody
     if not pitch_sequence:
@@ -72,7 +72,7 @@ def concat_melody_beats(df_melody, df_beats):
         Dataframe consisting of the combination of both tables
     """
     # Remove useless columns
-    df_melody = df_melody[['eventid', 'melid', 'pitch', 'bar', 'beat']]
+    df_melody = df_melody[['eventid', 'melid', 'pitch', 'duration', 'bar', 'beat']]
     #df_beats = df_beats[['beatid', 'melid', 'bar', 'beat', 'chord', 'bass_pitch']]
 
     # Replace empty strings by nan and then use ffill to fill with last seen chord
@@ -81,18 +81,20 @@ def concat_melody_beats(df_melody, df_beats):
     df_chords = df_beats.replace({'': np.nan}).ffill()
 
     # Define new index with the key (melid, bar, beat)
-    df_chords_new = df_chords.set_index(['melid', 'bar', 'beat'], drop=False)
-    df_melody_new = df_melody.set_index(['melid', 'bar', 'beat'], drop=False)
+    new_index = ['melid', 'bar', 'beat']
+    df_chords_new = df_chords.set_index(new_index, drop=True)
+    df_melody_new = df_melody.set_index(new_index, drop=True)
 
     # Concatenate the dataframes using the new index and then reset the index again
-    df_mel_beats = pd.concat([df_melody_new, df_chords_new.reindex(df_melody_new.index)], axis=1)
-    df_mel_beats = df_mel_beats.reset_index(drop=True)
-
+    #df_mel_beats = pd.concat([df_melody_new, df_chords_new.reindex(df_melody_new.index)], axis=1)
+    df_beats_mel = df_chords_new.merge(df_melody_new, left_on=new_index, right_on=new_index, how='outer')
+    df_beats_mel = df_beats_mel.reset_index(drop=False)
+    
     # Remove duplicate columns
     # Duplicated columns are:
     # - melid
     # - bar
     # - beat
-    df_mel_beats = df_mel_beats.loc[:,~df_mel_beats.columns.duplicated()]
+    df_beats_mel = df_beats_mel.loc[:,~df_beats_mel.columns.duplicated()]
 
-    return df_mel_beats
+    return df_beats_mel
