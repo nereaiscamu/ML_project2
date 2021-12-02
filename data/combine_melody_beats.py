@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-
+import pdb
 
 def encode_pitch(df_melody, df_beats, pitch_sequence=False):
     """
@@ -21,8 +21,9 @@ def encode_pitch(df_melody, df_beats, pitch_sequence=False):
     df_mel_beats['pitch_encoded'] = np.mod(df_mel_beats['pitch'], 12)
     df_mel_beats['bass_pitch_encoded'] = np.mod(df_mel_beats['bass_pitch'], 12)
 
-    #df_mel_beats['pitch_encoded'] = df_mel_beats['pitch_encoded'].astype(int)
-    #df_mel_beats['bass_pitch_encoded'] = df_mel_beats['bass_pitch_encoded'].astype(int)
+    df_mel_beats['pitch_encoded'] = df_mel_beats['pitch_encoded'].astype(int)
+    max_pitch = df_mel_beats['pitch_encoded'].max()
+    df_mel_beats['bass_pitch_encoded'] = df_mel_beats['bass_pitch_encoded'].astype(int)
 
     ## Encode pitch for every chord of melody
     if not pitch_sequence:
@@ -53,7 +54,10 @@ def encode_pitch(df_melody, df_beats, pitch_sequence=False):
 
     # Drop useless columns and rows
     # TODO discuss if rows should be dropped or not
-    df_mel_beats.drop(['pitch_encoded', 'bass_pitch_encoded', 'chord_changed'], axis=1, inplace=True)
+
+    # melody_encoded = [np.zeros(max_pitch) for _ in range(len(df_mel_beats))]
+    # df_mel_beats['melody_encoded'] = melody_encoded
+    df_mel_beats.drop(['bass_pitch_encoded', 'chord_changed'], axis=1, inplace=True)
     df_mel_beats.drop(df_mel_beats[df_mel_beats['pitch_sequence'] == False].index, inplace=True)
 
     return df_mel_beats

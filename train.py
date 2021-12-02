@@ -7,7 +7,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import sys
 sys.path.append('./Data/')
-from chord_encoding import get_dataset_multi_hot
+from one_hot_encoding import get_dataset_one_hot
+from multi_hot_encoding import get_dataset_multi_hot
 from models.lstm_chord_models import LSTMChord, LSTMChordEmbedding, LSTMChordEmbedding_Multihot
 import pdb
 
@@ -61,7 +62,7 @@ if __name__ == "__main__":
 
     # train_dataset, test_dataset, vocab_size = get_mock_dataset()
     #train_dataset, test_dataset, vocab_size = get_dataset(choice=1, test_split=0.2)
-    train_dataset, test_dataset, input_size, target_size = get_dataset_multi_hot(choice=3, test_split=0.2)
+    train_dataset, test_dataset, input_size, target_size = get_dataset_multi_hot(choice=4, test_split=0.2)
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True) 
 
     # Create model
@@ -71,7 +72,7 @@ if __name__ == "__main__":
 
     # Define training variables
     optimizer = optim.Adam(model.parameters(), lr=0.01)
-    epochs = 2
+    epochs = 20
     losses = []
     train_accuracies = []
     test_accuracies = []
