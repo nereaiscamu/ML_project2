@@ -330,6 +330,7 @@ def get_dataset_multi_hot(choice=1, test_split=0.2):
         4: Multi-hot chord encoding + melody encoding (notes encoding combined)
         5: Multi-hot chord encoding + bass pitch encoding
         6: Multi-hot chord encoding + melody encoding & bass pitch encoding
+        7: Multi-hot chord encoding + melody encoding with weighted duration
     '''
 
     path = "./Data/wjazzd.db" # REPLACE THIS WITH PATH TO FILE
