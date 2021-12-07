@@ -29,7 +29,7 @@ def get_accuracy_vl(outputs, targets):
 
   return 100 * (flat_outputs[mask] == flat_targets[mask]).sum() / sum(mask)
 
-def get_test_loss(test_dataset):
+def get_test_loss(model, test_dataset):
     test_loader = DataLoader(test_dataset, batch_size=len(test_dataset), shuffle=False) 
 
     for batch_idx, batch in enumerate(test_loader):
@@ -72,33 +72,36 @@ def evaluate_model(model, test_dataset):
 
 if __name__ == "__main__":
     # Get dataset
-    # about 350 training samples
+    # 354 training samples
     batch_size = 20
-    avg_loss_steps = 10
 
     # train_dataset, test_dataset, vocab_size = get_mock_dataset()
     #train_dataset, test_dataset, vocab_size = get_dataset(choice=1, test_split=0.2)
-    train_dataset, test_dataset, input_size, target_size = get_dataset_multi_hot(choice=6, test_split=0.2)
+    #train_dataset, test_dataset, input_size, target_size = get_dataset_multi_hot_new_encoding(choice=2, test_split=0.2)
+    train_dataset, test_dataset, input_size, target_size = get_dataset_multi_hot(choice=4, test_split=0.2)
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True) 
 
     # Create model
     #model = LSTMChord(vocab_size, lstm_hidden_size=16)
     #model = LSTMChordEmbedding(vocab_size, embed_size=16, lstm_hidden_size=16)
-    model = LSTM_Multihot(input_size, embed_size=32, lstm_hidden_size=32, target_size=target_size)
+    model = LSTM_Multihot(input_size, embed_size=128, lstm_hidden_size=128, target_size=target_size, num_layers=2)
 
     # Define training variables
-    optimizer = optim.Adam(model.parameters(), lr=0.01)
-    epochs = 10
+    #optimizer = optim.Adam(model.parameters(), lr=0.01)
+    optimizer = optim.Adam(model.parameters(), lr=0.01, weight_decay=0.00001)
+    #optimizer = optim.SGD(model.parameters(), lr=0.0005)
+    #optimizer = optim.SGD(model.parameters(), lr=0.0001, momentum=0.9)
+    epochs = 50
     train_losses = []
     test_losses = []
     train_accuracies = []
     test_accuracies = []
 
     # TRAIN
+    n_batches = np.ceil(len(train_dataset)/batch_size)
     for epoch in range(epochs):
         print("EPOCH", epoch)
         epoch_loss = 0
-        avg_loss = 0
         for batch_idx, batch in enumerate(train_loader):
             inputs = batch["input"].float()
             lengths = batch["length"]
@@ -112,19 +115,17 @@ if __name__ == "__main__":
             loss.backward()
             optimizer.step() 
 
-            epoch_loss += loss.item()/len(train_dataset)
-            avg_loss += loss.item() / len(inputs)
-            #print("Loss:", loss.item())
-            if (batch_idx+1) % avg_loss_steps == 0:
-                train_losses.append(avg_loss / avg_loss_steps)
-                avg_loss = 0
-                test_losses.append(get_test_loss(test_dataset))
+            epoch_loss += loss.item() / n_batches
 
-
-
-        print("Epoch avg loss: %.4f" % epoch_loss)
+        train_losses.append(epoch_loss)
+        test_losses.append(get_test_loss(model, test_dataset))
         train_accuracies.append(evaluate_model(model, train_dataset))
         test_accuracies.append(evaluate_model(model, test_dataset))
+        print("Train/test loss: \t%.4f\t%.4f\t\tTrain/test accuracy: \t%.2f\t%.2f" % (epoch_loss, test_losses[-1], train_accuracies[-1], test_accuracies[-1]))
+
+        #if epoch == 20 or epoch == 40:
+        #    for g in optimizer.param_groups:
+        #        g['lr'] /= 0.2
 
     print('*** Training done! ***')
 
@@ -134,9 +135,11 @@ if __name__ == "__main__":
     te_acc = evaluate_model(model, test_dataset)
     print('Test accuracy:\t%.2f' % te_acc)
 
-    plt.plot(train_losses, label='train loss')
-    plt.plot(test_losses, label='test loss')
+    plt.plot(train_losses, label='Train')
+    plt.plot(test_losses, label='Test')
+    plt.legend()
     plt.ylabel('Loss')
+    plt.xlabel('Epoch')
     plt.show()
     plt.plot(train_accuracies, label='Train')
     plt.plot(test_accuracies, label='Test')

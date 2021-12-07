@@ -106,7 +106,7 @@ chord_info_all = pd.unique(beats['chord_map'])
 
 
 
-beats['chord_extra'] = beats['Final_pitch'].str.cat(beats['chord_info'])
+beats['chord_extra'] = beats['Final_pitch'].str.cat(beats['chord_map'])
 
 total_chord = beats['chord_info'].value_counts()
 
@@ -129,12 +129,11 @@ chord_dict.to_csv(pathlib.os.path.join(project_path,'Chord_Dictionary.csv'),
     
 modes = ['o', '-', '+', 'sus', 'alt']
 beats['mode'] = '0'
-beats['extra_note'] = beats['C_chord_map']
+beats['extra_note'] = beats['chord_map']
 
 
 for i in modes:
-    beats.loc[beats['C_chord_map'].str.contains(i, regex = False) == True, 
-              'mode' ] = i
+    beats.loc[beats['chord_map'].str.contains(i, regex = False) == True, 'mode'] = i
     beats['extra_note'] = beats['extra_note'].str.replace(i,'', regex = False)
     
 beats['extra_note'] = beats['extra_note'].str.replace('C','')

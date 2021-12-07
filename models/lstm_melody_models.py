@@ -8,19 +8,20 @@ from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 
 
 class LSTM_Multihot(nn.Module):
-    def __init__(self, input_size, embed_size, lstm_hidden_size, target_size):
+    def __init__(self, input_size, embed_size, lstm_hidden_size, target_size, num_layers=1):
         super().__init__()
         self.input_size = input_size
         self.embed_size = embed_size
         self.lstm_hidden_size = lstm_hidden_size
         self.target_size = target_size
+        self.num_layers = num_layers
 
         self.embed = nn.Linear(input_size, embed_size)
 
         self.lstm = nn.LSTM(
             self.embed_size,
             self.lstm_hidden_size,
-            num_layers=1,
+            num_layers=self.num_layers,
             bidirectional=False,
             batch_first=True,
         )

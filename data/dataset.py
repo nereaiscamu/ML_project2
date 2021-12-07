@@ -59,7 +59,7 @@ class MultiHot_VLDataset(Dataset):
         target_sequence = self.target_sequence[i]
         sequence_length = sequence.shape[0]
 
-        # Pad input with 0 up to max length
+        # Encode CHORD from sequence to multi-hot
         encoded_multihot = None
         for n in range(self.num_one_hot):
             if encoded_multihot is None:
@@ -85,7 +85,7 @@ class MultiHot_VLDataset(Dataset):
 
 class MultiHot_MelodyEncoded_VLDataset(Dataset):
     '''
-    Variable length dataset for CHORD encoding as a MULTI-HOT
+    Variable length dataset for multi-hot CHORD and MELODY embedding
     '''
     def __init__(self, sequences, melody_encoding, target_sequence, vocab_sizes):
         self.sequences = sequences
@@ -100,12 +100,12 @@ class MultiHot_MelodyEncoded_VLDataset(Dataset):
         return len(self.sequences)
 
     def __getitem__(self, i):
-        sequence = self.sequences[i]
+        sequence = self.sequences[i].astype(int)
         melody = self.melody_encoding[i]
         target_sequence = self.target_sequence[i]
         sequence_length = sequence.shape[0]
 
-        # Pad input with 0 up to max length
+        # Encode CHORD from sequence to multi-hot
         encoded_multihot = None
         for n in range(self.num_one_hot):
             if encoded_multihot is None:
@@ -118,13 +118,16 @@ class MultiHot_MelodyEncoded_VLDataset(Dataset):
                 encoded_onehot[np.arange(sequence_length), sequence[:,n]] = 1 
                 encoded_multihot = np.concatenate((encoded_multihot, encoded_onehot), axis=1)
 
-
+        # Encode MELODY from sequence to embedding
         melody_encoded = np.zeros((self.max_length, 12))
         for i, pitch_sequence in enumerate(melody):
             for note in pitch_sequence:
-                melody_encoded[i, note] += 1
-            melody_encoded[i] /= sum(melody_encoded[i])
+                if note != -1:
+                    melody_encoded[i, note] += 1
+            if sum(melody_encoded[i]) > 0:
+                melody_encoded[i] /= sum(melody_encoded[i])
         input_ = np.concatenate((encoded_multihot, melody_encoded), axis=1)
+
         # Pad target with some INVALID value (-1)
         target = np.ones(self.max_length - 1) * -1
         target[:sequence_length - 1] = target_sequence[1:]
@@ -137,7 +140,7 @@ class MultiHot_MelodyEncoded_VLDataset(Dataset):
 
 class MultiHot_MelodyBassEncoded_VLDataset(Dataset):
     '''
-    Variable length dataset for bass_pitch encoding as a MULTI-HOT
+    Variable length dataset for multi-hot CHORD, MELODY embedding and BASS embedding
     '''
     def __init__(self, sequences, melody_encoding, bass_encoding, target_sequence, vocab_sizes):
         self.sequences = sequences
@@ -159,7 +162,7 @@ class MultiHot_MelodyBassEncoded_VLDataset(Dataset):
         target_sequence = self.target_sequence[i]
         sequence_length = sequence.shape[0]
 
-        # Pad input with 0 up to max length
+        # Encode CHORD from sequence to multi-hot
         encoded_multihot = None
         for n in range(self.num_one_hot):
             if encoded_multihot is None:
@@ -172,14 +175,16 @@ class MultiHot_MelodyBassEncoded_VLDataset(Dataset):
                 encoded_onehot[np.arange(sequence_length), sequence[:,n]] = 1 
                 encoded_multihot = np.concatenate((encoded_multihot, encoded_onehot), axis=1)
 
-
+        # Encode MELODY from sequence to embedding
         melody_encoded = np.zeros((self.max_length, 12))
-        bass_encoded = np.zeros((self.max_length, 12))
         for i, pitch_sequence in enumerate(melody):
             for note in pitch_sequence:
-                melody_encoded[i, note] += 1
+                if note != -1:
+                    melody_encoded[i, note] += 1
             melody_encoded[i] /= sum(melody_encoded[i])
 
+        # Encode BASS from sequence to embedding
+        bass_encoded = np.zeros((self.max_length, 12))
         for i, bass_sequence in enumerate(bass):
             for note in bass_sequence:
                 bass_encoded[i, note] += 1
