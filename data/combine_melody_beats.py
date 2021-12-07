@@ -25,8 +25,6 @@ def encode_pitch(df_melody, df_beats, pitch_sequence=False):
     df_beats_mel['pitch_encoded'] = df_beats_mel['pitch_encoded'].astype(int)
     max_pitch = df_beats_mel['pitch_encoded'].max()
     df_beats_mel['bass_pitch_encoded'] = df_beats_mel['bass_pitch_encoded'].astype(int)
-    #pd.set_option('display.float_format','{:.4f}'.format)
-    #df_beats_mel['duration'] = df_beats_mel['duration'].map('{:,.4f}'.format)
     df_beats_mel['duration'] = df_beats_mel['duration'].round(4)
 
     ## Encode pitch for every chord of melody
@@ -52,7 +50,6 @@ def encode_pitch(df_melody, df_beats, pitch_sequence=False):
 
     # Set sequence to last chord
     # TODO decrease running time if possible
-    # TODO discuss where the sequence should be added
     for idx, _ in df_beats_mel.iterrows():
         if df_beats_mel.at[idx, 'pitch_sequence'] == True:
             df_beats_mel.at[idx, 'pitch_sequence'] = pitch_sequences.pop(0)

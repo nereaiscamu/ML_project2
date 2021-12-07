@@ -91,7 +91,7 @@ if __name__ == "__main__":
     optimizer = optim.Adam(model.parameters(), lr=0.01, weight_decay=0.00001)
     #optimizer = optim.SGD(model.parameters(), lr=0.0005)
     #optimizer = optim.SGD(model.parameters(), lr=0.0001, momentum=0.9)
-    epochs = 100
+    epochs = 50
     train_losses = []
     test_losses = []
     train_accuracies = []
