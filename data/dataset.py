@@ -181,7 +181,8 @@ class MultiHot_MelodyBassEncoded_VLDataset(Dataset):
             for note in pitch_sequence:
                 if note != -1:
                     melody_encoded[i, note] += 1
-            melody_encoded[i] /= sum(melody_encoded[i])
+            if sum(melody_encoded[i]) > 0:
+                melody_encoded[i] /= sum(melody_encoded[i])
 
         # Encode BASS from sequence to embedding
         bass_encoded = np.zeros((self.max_length, 12))
@@ -192,6 +193,67 @@ class MultiHot_MelodyBassEncoded_VLDataset(Dataset):
             
         input_ = np.concatenate((encoded_multihot, melody_encoded), axis=1)
         input_ = np.concatenate((input_, bass_encoded), axis=1)
+
+        # Pad target with some INVALID value (-1)
+        target = np.ones(self.max_length - 1) * -1
+        target[:sequence_length - 1] = target_sequence[1:]
+        return {
+            "input": torch.tensor(input_[:-1]),
+            "target": torch.tensor(target).long(),
+            "length": sequence_length - 1,  # Return the length
+        }
+
+
+class MultiHot_MelodyDurationEncoded_VLDataset(Dataset):
+    '''
+    Variable length dataset for multi-hot CHORD and MELODY embedding
+    '''
+    def __init__(self, sequences, melody_encoding, target_sequence, vocab_sizes):
+        self.sequences = sequences
+        self.melody_encoding = melody_encoding # Here melody_encoding should be a array of tuples of (melody_sequence, duration_sequence)
+        self.target_sequence = target_sequence
+        self.vocab_sizes = vocab_sizes
+        self.num_one_hot = len(vocab_sizes)   # Number of one-hot vectors that form the multi-hot
+
+        self.max_length = max(map(len, self.sequences))  # Add max length
+
+    def __len__(self):
+        return len(self.sequences)
+
+    def __getitem__(self, i):
+        sequence = self.sequences[i].astype(int)
+        melody = self.melody_encoding[i]
+        target_sequence = self.target_sequence[i]
+        sequence_length = sequence.shape[0]
+
+        # Encode CHORD from sequence to multi-hot
+        encoded_multihot = None
+        for n in range(self.num_one_hot):
+            if encoded_multihot is None:
+                encoded_onehot = np.zeros((self.max_length, self.vocab_sizes[n]))
+                encoded_onehot[np.arange(sequence_length), sequence[:,n]] = 1
+                encoded_multihot = encoded_onehot
+
+            else:
+                encoded_onehot = np.zeros((self.max_length, self.vocab_sizes[n]))
+                encoded_onehot[np.arange(sequence_length), sequence[:,n]] = 1 
+                encoded_multihot = np.concatenate((encoded_multihot, encoded_onehot), axis=1)
+
+        # Encode MELODY from sequence to embedding
+        melody_encoded = np.zeros((self.max_length, 12))
+
+        # Extract tuple
+        tuple = melody[0]
+        (pitch_sequences, duration_sequences) = tuple
+
+        for pitch_seq, duration_seq in zip(pitch_sequences, duration_sequences):
+            #Create weighted array
+            multiplier = np.arange(1, len(pitch_seq)+1)
+            if not -1 in pitch_seq:
+                melody_encoded[i, pitch_seq] += duration_seq * multiplier
+        if sum(melody_encoded[i]) > 0:
+            melody_encoded[i] /= sum(melody_encoded[i])
+        input_ = np.concatenate((encoded_multihot, melody_encoded), axis=1)
 
         # Pad target with some INVALID value (-1)
         target = np.ones(self.max_length - 1) * -1

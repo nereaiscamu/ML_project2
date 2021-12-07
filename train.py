@@ -78,7 +78,7 @@ if __name__ == "__main__":
     # train_dataset, test_dataset, vocab_size = get_mock_dataset()
     #train_dataset, test_dataset, vocab_size = get_dataset(choice=1, test_split=0.2)
     #train_dataset, test_dataset, input_size, target_size = get_dataset_multi_hot_new_encoding(choice=2, test_split=0.2)
-    train_dataset, test_dataset, input_size, target_size = get_dataset_multi_hot(choice=4, test_split=0.2)
+    train_dataset, test_dataset, input_size, target_size = get_dataset_multi_hot(choice=7, test_split=0.2)
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True) 
 
     # Create model
@@ -91,7 +91,7 @@ if __name__ == "__main__":
     optimizer = optim.Adam(model.parameters(), lr=0.01, weight_decay=0.00001)
     #optimizer = optim.SGD(model.parameters(), lr=0.0005)
     #optimizer = optim.SGD(model.parameters(), lr=0.0001, momentum=0.9)
-    epochs = 50
+    epochs = 100
     train_losses = []
     test_losses = []
     train_accuracies = []

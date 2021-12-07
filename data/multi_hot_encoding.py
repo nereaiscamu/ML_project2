@@ -1,7 +1,7 @@
 from sqlalchemy import create_engine
 import pandas as pd
 import numpy as np
-from dataset import OneHot_VLDataset, MultiHot_VLDataset, MultiHot_MelodyEncoded_VLDataset, MultiHot_MelodyBassEncoded_VLDataset
+from dataset import OneHot_VLDataset, MultiHot_VLDataset, MultiHot_MelodyEncoded_VLDataset, MultiHot_MelodyBassEncoded_VLDataset, MultiHot_MelodyDurationEncoded_VLDataset
 import pdb
 
 import sys
@@ -297,46 +297,29 @@ def get_dataset5(melody, beats):
         (4): Melody encoding. All notes combined into one embedding
         (5): Bass pitch encoding
     """
+    
     beats = beats[['beatid', 'melid', 'bar', 'beat', 'chord', 'bass_pitch']]
 
     beats_encoded = preprocess_chords(beats)
-    mel_beats = encode_pitch(melody, beats_encoded, pitch_sequence=True)
+    beats_mel = encode_pitch(melody, beats_encoded, pitch_sequence=True)
+    beats_mel = encode_chords_1(beats_mel)
 
-    unique_chords = pd.unique(mel_beats['new_chord'])
-    unique_pitch = pd.unique(mel_beats['final_pitch'])
-    unique_minor = pd.unique(mel_beats['minor'])
-    unique_chord_info = pd.unique(mel_beats['chord_info'])
-    unique_notes = pd.unique(mel_beats['pitch_encoded'])
-    vocab_sizes = [len(unique_pitch), len(unique_minor), len(unique_chord_info)]
-    
-    # Encode each final pitch to a number by order of appearnce
-    final_pitch_map = {}
-    for i, c in enumerate(unique_pitch):
-        final_pitch_map[c] = i
-    mel_beats['final_pitch_num'] = mel_beats['final_pitch'].map(final_pitch_map)
-
-    # Encode chord info
-    chord_info_map = {}
-    for i, c in enumerate(unique_chord_info):
-        chord_info_map[c] = i
-    mel_beats['chord_info_num'] = mel_beats['chord_info'].map(chord_info_map)
-
-    # Encode new chord
-    new_chord_map = {}
-    for i, c in enumerate(unique_chords):
-        new_chord_map[c] = i
-    mel_beats['new_chord_num'] = mel_beats['new_chord'].map(new_chord_map)
-
+    unique_chords = pd.unique(beats_mel['new_chord'])
+    unique_pitch = pd.unique(beats_mel['final_pitch'])
+    unique_mode = pd.unique(beats_mel['mode'])
+    unique_extra_note = pd.unique(beats_mel['extra_note'])
+    unique_notes = pd.unique(beats_mel['pitch_encoded'])
+    vocab_sizes = [len(unique_pitch), len(unique_mode), len(unique_extra_note)]
     target_size = len(unique_chords)
+    
     print('\nUsing a total chord vocab size of %d (One-hot)' % len(unique_chords))
     print('Multi-hot input:')
     print('\t(1): Root pitch and #. Vocab size of %d' % len(unique_pitch))
-    print('\t(2): Whether or not it is minor. Binary flag, size %d' % len(unique_minor))
-    print('\t(3): Other chord info. Vocab size of %d' % len(unique_chord_info))
-    print('\t(4): Melody pitch. Vocab size of %d' % len(unique_notes))
-    print('\t(5): Bass pitch. Vocab size of %d\n' % len(unique_notes))
+    print('\t(2): Mode. Vocab size of %d' % len(unique_mode))
+    print('\t(3): Extra note. Vocab size of %d' % len(unique_extra_note))
+    print('\t(4): Melody pitch. Vocab size of %d\n' % len(unique_notes))
 
-    return mel_beats, vocab_sizes, target_size
+    return beats_mel, vocab_sizes, target_size
 
 def get_dataset_multi_hot(choice=1, test_split=0.2):
     '''
@@ -362,7 +345,7 @@ def get_dataset_multi_hot(choice=1, test_split=0.2):
         beats, vocab_sizes, target_size = get_dataset3(melody_raw, beats_raw)
     if choice == 4:
         beats, vocab_sizes, target_size = get_dataset4(melody_raw, beats_raw)
-    if choice == 5 or choice == 6:
+    if choice == 5 or choice == 6 or choice == 7:
         beats, vocab_sizes, target_size = get_dataset5(melody_raw, beats_raw)
 
     sequences = []          # store chord as multi-hot
@@ -402,13 +385,17 @@ def get_dataset_multi_hot(choice=1, test_split=0.2):
                         bass_pitch_encoding = song['bass_pitch_sequence']
                         bass_pitch.append(np.array(bass_pitch_encoding))
                     if choice == 6:     # melody + bass encoding
-                        #duration_melody = song['duration_sequence']
                         melody_encoding = song['pitch_sequence']
                         bass_pitch_encoding = song['bass_pitch_sequence']
-                        #melodies.append(np.array((melody_encoding, duration_melody)))
                         melodies.append(np.array(melody_encoding))
                         bass_pitch.append(np.array(bass_pitch_encoding))
-            
+                    if choice == 7:     # melody weighted with the duration of the notes
+                        duration_melody = song['duration_sequence']
+                        melody_encoding = song['pitch_sequence']
+                        # Append a tuple of the melody and duration
+                        melodies.append(np.array([(melody_encoding, duration_melody)], dtype='object, object'))
+
+
             target_sequence.append(seq_one_hot)
                 
     # Split
@@ -442,6 +429,16 @@ def get_dataset_multi_hot(choice=1, test_split=0.2):
         train_dataset = MultiHot_MelodyBassEncoded_VLDataset(train_seq, train_mel, train_bass, train_target_seq, vocab_sizes)
         test_dataset = MultiHot_MelodyBassEncoded_VLDataset(test_seq, test_mel, test_bass, test_target_seq, vocab_sizes)
         input_size = sum(vocab_sizes) + 12 + 12
+        return train_dataset, test_dataset, input_size, target_size
+
+    if choice == 7:
+        train_mel = melodies[:split_idx]
+        test_mel = melodies[split_idx:]
+        #train_duration = duration_sequence[:split_idx]
+        #test_duration = duration_sequence[split_idx:]        
+        train_dataset = MultiHot_MelodyDurationEncoded_VLDataset(train_seq, train_mel, train_target_seq, vocab_sizes)
+        test_dataset = MultiHot_MelodyDurationEncoded_VLDataset(test_seq, test_mel, test_target_seq, vocab_sizes)
+        input_size = sum(vocab_sizes) + 12
         return train_dataset, test_dataset, input_size, target_size
 
     train_dataset = MultiHot_VLDataset(train_seq, train_target_seq, vocab_sizes)
