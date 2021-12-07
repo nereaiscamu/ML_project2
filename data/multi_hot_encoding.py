@@ -402,8 +402,10 @@ def get_dataset_multi_hot(choice=1, test_split=0.2):
                         bass_pitch_encoding = song['bass_pitch_sequence']
                         bass_pitch.append(np.array(bass_pitch_encoding))
                     if choice == 6:     # melody + bass encoding
+                        #duration_melody = song['duration_sequence']
                         melody_encoding = song['pitch_sequence']
                         bass_pitch_encoding = song['bass_pitch_sequence']
+                        #melodies.append(np.array((melody_encoding, duration_melody)))
                         melodies.append(np.array(melody_encoding))
                         bass_pitch.append(np.array(bass_pitch_encoding))
             

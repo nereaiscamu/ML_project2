@@ -25,6 +25,9 @@ def encode_pitch(df_melody, df_beats, pitch_sequence=False):
     df_beats_mel['pitch_encoded'] = df_beats_mel['pitch_encoded'].astype(int)
     max_pitch = df_beats_mel['pitch_encoded'].max()
     df_beats_mel['bass_pitch_encoded'] = df_beats_mel['bass_pitch_encoded'].astype(int)
+    #pd.set_option('display.float_format','{:.4f}'.format)
+    #df_beats_mel['duration'] = df_beats_mel['duration'].map('{:,.4f}'.format)
+    df_beats_mel['duration'] = df_beats_mel['duration'].round(4)
 
     ## Encode pitch for every chord of melody
     if not pitch_sequence:
@@ -37,6 +40,7 @@ def encode_pitch(df_melody, df_beats, pitch_sequence=False):
     # Group chord changes to get sequences
     pitch_sequences = [g['pitch_encoded'].tolist() for k, g in df_beats_mel.groupby('chord_changed')]
     bass_pitch_sequences = [g['bass_pitch_encoded'].tolist() for k, g in df_beats_mel.groupby('chord_changed')]
+    duration_sequence = [g['duration'].tolist() for k, g in df_beats_mel.groupby('chord_changed')]
 
     # Identify last row of current chord
     df_beats_mel['pitch_sequence'] = (df_beats_mel['chord'].shift(-1) != df_beats_mel["chord"])
@@ -44,6 +48,7 @@ def encode_pitch(df_melody, df_beats, pitch_sequence=False):
     # Change type to type object to add list to cell
     df_beats_mel['pitch_sequence'] = df_beats_mel['pitch_sequence'].astype(object)
     df_beats_mel['bass_pitch_sequence'] = df_beats_mel['pitch_sequence']
+    df_beats_mel['duration_sequence'] = df_beats_mel['pitch_sequence']
 
     # Set sequence to last chord
     # TODO decrease running time if possible
@@ -52,6 +57,7 @@ def encode_pitch(df_melody, df_beats, pitch_sequence=False):
         if df_beats_mel.at[idx, 'pitch_sequence'] == True:
             df_beats_mel.at[idx, 'pitch_sequence'] = pitch_sequences.pop(0)
             df_beats_mel.at[idx, 'bass_pitch_sequence'] = bass_pitch_sequences.pop(0)
+            df_beats_mel.at[idx, 'duration_sequence'] = duration_sequence.pop(0)
 
     # melody_encoded = [np.zeros(max_pitch) for _ in range(len(df_beats_mel))]
     # df_beats_mel['melody_encoded'] = melody_encoded
