@@ -246,7 +246,7 @@ class MultiHot_MelodyDurationEncoded_VLDataset(Dataset):
         tuple = melody[0]
         (pitch_sequences, duration_sequences) = tuple
 
-        for pitch_seq, duration_seq in zip(pitch_sequences, duration_sequences):
+        for i, (pitch_seq, duration_seq) in enumerate(zip(pitch_sequences, duration_sequences)):
             #Create weighted array
             multiplier = np.arange(1, len(pitch_seq)+1)
             if not -1 in pitch_seq:
