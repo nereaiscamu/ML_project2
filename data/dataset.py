@@ -247,10 +247,21 @@ class MultiHot_MelodyDurationEncoded_VLDataset(Dataset):
         (pitch_sequences, duration_sequences) = tuple
 
         for i, (pitch_seq, duration_seq) in enumerate(zip(pitch_sequences, duration_sequences)):
+            # take only last 10 notes
+            if len(pitch_seq) >= 10:
+                pitch_seq = pitch_seq[-10:]
+                duration_seq = duration_seq[-10:]
+
             #Create weighted array
-            multiplier = np.arange(1, len(pitch_seq)+1)
+            # divider = np.arange(float(2*len(pitch_seq)), step=2)
+            # divider[0] = 1.0
+            # divider = divider[::-1]
+
+            # TODO series gets too big if we take all the notes
+            divider = np.geomspace(1, np.power(2, len(pitch_seq)-1), num=len(pitch_seq))
+
             if not -1 in pitch_seq:
-                melody_encoded[i, pitch_seq] += duration_seq * multiplier
+                melody_encoded[i, pitch_seq] += duration_seq / divider
         if sum(melody_encoded[i]) > 0:
             melody_encoded[i] /= sum(melody_encoded[i])
         input_ = np.concatenate((encoded_multihot, melody_encoded), axis=1)
