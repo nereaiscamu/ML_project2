@@ -30,6 +30,7 @@ def get_accuracy_vl(outputs, targets):
   return 100 * (flat_outputs[mask] == flat_targets[mask]).sum() / sum(mask)
 
 def get_test_loss(model, test_dataset):
+    model.eval()
     test_loader = DataLoader(test_dataset, batch_size=len(test_dataset), shuffle=False) 
 
     for batch_idx, batch in enumerate(test_loader):
@@ -46,6 +47,7 @@ def get_test_loss(model, test_dataset):
 # DM
 def evaluate_model(model, test_dataset):
     # TODO idk if this is the best way to load test data. what is the role of batch_size here?
+    model.eval()
     test_loader = DataLoader(test_dataset, batch_size=len(test_dataset), shuffle=False) 
 
     correct = 0
@@ -78,20 +80,21 @@ if __name__ == "__main__":
     # train_dataset, test_dataset, vocab_size = get_mock_dataset()
     #train_dataset, test_dataset, vocab_size = get_dataset(choice=1, test_split=0.2)
     #train_dataset, test_dataset, input_size, target_size = get_dataset_multi_hot_new_encoding(choice=2, test_split=0.2)
-    train_dataset, test_dataset, input_size, target_size = get_dataset_multi_hot(choice=7, test_split=0.2)
+    train_dataset, test_dataset, input_size, target_size = get_dataset_multi_hot(choice=5, test_split=0.2)
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True) 
 
     # Create model
     #model = LSTMChord(vocab_size, lstm_hidden_size=16)
     #model = LSTMChordEmbedding(vocab_size, embed_size=16, lstm_hidden_size=16)
-    model = LSTM_Multihot(input_size, embed_size=128, lstm_hidden_size=128, target_size=target_size, num_layers=2)
+    model = LSTM_Multihot(input_size, embed_size=64, lstm_hidden_size=64, target_size=target_size, num_layers=2, dropout_linear=0.4, dropout_lstm=0.4)
 
     # Define training variables
     #optimizer = optim.Adam(model.parameters(), lr=0.01)
-    optimizer = optim.Adam(model.parameters(), lr=0.01, weight_decay=0.00001)
+    optimizer = optim.Adam(model.parameters(), lr=0.01, weight_decay=1e-4)
+    #optimizer = optim.Adam(model.parameters(), lr=0.01, weight_decay=0.00001)
     #optimizer = optim.SGD(model.parameters(), lr=0.0005)
     #optimizer = optim.SGD(model.parameters(), lr=0.0001, momentum=0.9)
-    epochs = 50
+    epochs = 200
     train_losses = []
     test_losses = []
     train_accuracies = []
@@ -100,6 +103,7 @@ if __name__ == "__main__":
     # TRAIN
     n_batches = np.ceil(len(train_dataset)/batch_size)
     for epoch in range(epochs):
+        model.train()
         print("EPOCH", epoch)
         epoch_loss = 0
         for batch_idx, batch in enumerate(train_loader):
@@ -117,15 +121,16 @@ if __name__ == "__main__":
 
             epoch_loss += loss.item() / n_batches
 
+        model.eval()
         train_losses.append(epoch_loss)
         test_losses.append(get_test_loss(model, test_dataset))
         train_accuracies.append(evaluate_model(model, train_dataset))
         test_accuracies.append(evaluate_model(model, test_dataset))
         print("Train/test loss: \t%.4f\t%.4f\t\tTrain/test accuracy: \t%.2f\t%.2f" % (epoch_loss, test_losses[-1], train_accuracies[-1], test_accuracies[-1]))
 
-        #if epoch == 20 or epoch == 40:
-        #    for g in optimizer.param_groups:
-        #        g['lr'] /= 0.2
+        if epoch == 50 or epoch == 100 or epoch == 150:
+            for g in optimizer.param_groups:
+                g['lr'] /= 2
 
     print('*** Training done! ***')
 
@@ -140,10 +145,13 @@ if __name__ == "__main__":
     plt.legend()
     plt.ylabel('Loss')
     plt.xlabel('Epoch')
+    plt.savefig('loss.png')
     plt.show()
+
     plt.plot(train_accuracies, label='Train')
     plt.plot(test_accuracies, label='Test')
     plt.ylabel('Accuracy (%)')
     plt.xlabel('Epoch')
     plt.legend()
+    plt.savefig('acc.png')
     plt.show()
