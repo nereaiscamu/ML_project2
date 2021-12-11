@@ -104,7 +104,6 @@ def train(args):
     n_batches = np.ceil(len(train_dataset)/batch_size)
     for epoch in range(epochs):
         model.train()
-        print("EPOCH", epoch)
         epoch_loss = 0
         for batch_idx, batch in enumerate(train_loader):
             inputs = batch["input"].float()
@@ -126,7 +125,7 @@ def train(args):
         val_losses.append(get_val_loss(model, val_dataset))
         train_accuracies.append(evaluate_model(model, train_dataset))
         val_accuracies.append(evaluate_model(model, val_dataset))
-        print("Train/val loss: \t%.4f\t%.4f\t\tTrain/val accuracy: \t%.2f\t%.2f" % (epoch_loss, val_losses[-1], train_accuracies[-1], val_accuracies[-1]))
+        print("EPOCH %d\tTrain/val loss: \t%.4f\t%.4f\t\tTrain/val accuracy: \t%.2f\t%.2f" % (epoch, epoch_loss, val_losses[-1], train_accuracies[-1], val_accuracies[-1]))
 
         if epoch == 50 or epoch == 100 or epoch == 150:
             for g in optimizer.param_groups:
@@ -194,8 +193,8 @@ if __name__ == "__main__":
                         help='')
     parser.add_argument('--load-path', type=str,
                         # required=True,
-                        #default=None,
-                        default='models/trained_models/model_name.pth',
+                        default=None,
+                        #default='models/trained_models/model_name.pth',
                         help='')
 
     args = parser.parse_args()
