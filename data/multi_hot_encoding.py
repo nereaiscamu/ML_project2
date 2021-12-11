@@ -321,7 +321,7 @@ def get_dataset5(melody, beats):
 
     return beats_mel, vocab_sizes, target_size
 
-def get_dataset_multi_hot(choice=1, test_split=0.2):
+def get_dataset_multi_hot(choice=1, val_split=0.1, test_split=0.1):
     '''
     Generate train and test dataset. Based on dataset choice
     choice:
@@ -399,54 +399,80 @@ def get_dataset_multi_hot(choice=1, test_split=0.2):
 
             target_sequence.append(seq_one_hot)
                 
-    # Split
-    split_idx = int(len(sequences)*(1-test_split))
-    train_seq = sequences[:split_idx]
-    test_seq = sequences[split_idx:]
-    train_target_seq = target_sequence[:split_idx]
-    test_target_seq = target_sequence[split_idx:]
+    # convert to np array
+    sequences = np.array(sequences)
+    target_sequence = np.array(target_sequence)
+    melodies = np.array(melodies)
+    bass_pitch = np.array(bass_pitch)
+
+    # Split Train/Val/Test
+    random_idxs = np.random.permutation(len(sequences))
+    split_1 = int(len(sequences)*(1-test_split-val_split))
+    split_2 = int(len(sequences)*(1-test_split))
+
+    train_idxs = random_idxs[:split_1]
+    val_idxs = random_idxs[split_1:split_2]
+    test_idxs = random_idxs[split_2:]
+
+    train_seq = sequences[train_idxs]
+    val_seq = sequences[val_idxs]
+    test_seq = sequences[test_idxs]
+    train_target_seq = target_sequence[train_idxs]
+    val_target_seq = target_sequence[val_idxs]
+    test_target_seq = target_sequence[test_idxs]
 
     if choice == 4:
-        train_mel = melodies[:split_idx]
-        test_mel = melodies[split_idx:]
+        train_mel = melodies[train_idxs]
+        val_mel = melodies[val_idxs]
+        test_mel = melodies[test_idxs]
         train_dataset = MultiHot_MelodyEncoded_VLDataset(train_seq, train_mel, train_target_seq, vocab_sizes)
+        val_dataset = MultiHot_MelodyEncoded_VLDataset(val_seq, val_mel, val_target_seq, vocab_sizes)
         test_dataset = MultiHot_MelodyEncoded_VLDataset(test_seq, test_mel, test_target_seq, vocab_sizes)
         input_size = sum(vocab_sizes) + 12
-        return train_dataset, test_dataset, input_size, target_size
+        return train_dataset, val_dataset, test_dataset, input_size, target_size
 
     if choice == 5:
-        train_bass = bass_pitch[:split_idx]
-        test_bass = bass_pitch[split_idx:]
+        train_bass = bass_pitch[train_idxs]
+        val_bass = bass_pitch[val_idxs]
+        test_bass = bass_pitch[test_idxs]
         train_dataset = MultiHot_MelodyEncoded_VLDataset(train_seq, train_bass, train_target_seq, vocab_sizes)
+        val_dataset = MultiHot_MelodyEncoded_VLDataset(val_seq, val_bass, val_target_seq, vocab_sizes)
         test_dataset = MultiHot_MelodyEncoded_VLDataset(test_seq, test_bass, test_target_seq, vocab_sizes)
         input_size = sum(vocab_sizes) + 12
-        return train_dataset, test_dataset, input_size, target_size
+        return train_dataset, val_dataset, test_dataset, input_size, target_size
 
     if choice == 6:
-        train_mel = melodies[:split_idx]
-        test_mel = melodies[split_idx:]
-        train_bass = bass_pitch[:split_idx]
-        test_bass = bass_pitch[split_idx:]        
+        train_mel = melodies[train_idxs]
+        val_mel = melodies[val_idxs]
+        test_mel = melodies[test_idxs]
+        train_bass = bass_pitch[train_idxs]
+        val_bass = bass_pitch[val_idxs]
+        test_bass = bass_pitch[test_idxs]
         train_dataset = MultiHot_MelodyBassEncoded_VLDataset(train_seq, train_mel, train_bass, train_target_seq, vocab_sizes)
+        val_dataset = MultiHot_MelodyBassEncoded_VLDataset(val_seq, val_mel, val_bass, val_target_seq, vocab_sizes)
         test_dataset = MultiHot_MelodyBassEncoded_VLDataset(test_seq, test_mel, test_bass, test_target_seq, vocab_sizes)
         input_size = sum(vocab_sizes) + 12 + 12
-        return train_dataset, test_dataset, input_size, target_size
+        return train_dataset, val_dataset, test_dataset, input_size, target_size
 
     if choice == 7:
-        train_mel = melodies[:split_idx]
-        test_mel = melodies[split_idx:]
-        #train_duration = duration_sequence[:split_idx]
-        #test_duration = duration_sequence[split_idx:]        
+        train_mel = melodies[train_idxs]
+        val_mel = melodies[val_idxs]
+        test_mel = melodies[test_idxs]
+        #train_duration = duration_sequence[train_idxs]
+        #val_duration = duration_sequence[val_idxs]
+        #test_duration = duration_sequence[test_idxs]       
         train_dataset = MultiHot_MelodyDurationEncoded_VLDataset(train_seq, train_mel, train_target_seq, vocab_sizes)
+        val_dataset = MultiHot_MelodyDurationEncoded_VLDataset(val_seq, val_mel, val_target_seq, vocab_sizes)
         test_dataset = MultiHot_MelodyDurationEncoded_VLDataset(test_seq, test_mel, test_target_seq, vocab_sizes)
         input_size = sum(vocab_sizes) + 12
-        return train_dataset, test_dataset, input_size, target_size
+        return train_dataset, val_dataset, test_dataset, input_size, target_size
 
     train_dataset = MultiHot_VLDataset(train_seq, train_target_seq, vocab_sizes)
+    val_dataset = MultiHot_VLDataset(val_seq, val_target_seq, vocab_sizes)
     test_dataset = MultiHot_VLDataset(test_seq, test_target_seq, vocab_sizes)
 
     input_size = sum(vocab_sizes)
-    return train_dataset, test_dataset, input_size, target_size
+    return train_dataset, val_dataset, test_dataset, input_size, target_size
 
 
 if __name__ == "__main__":
