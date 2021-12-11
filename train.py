@@ -4,6 +4,7 @@ import torch.optim as optim
 import torch
 import torch.nn.functional as F
 import numpy as np
+import collections
 import matplotlib.pyplot as plt
 import sys
 sys.path.append('./Data/')
@@ -94,7 +95,7 @@ def train(args):
     #optimizer = optim.Adam(model.parameters(), lr=0.01, weight_decay=0.00001)
     #optimizer = optim.SGD(model.parameters(), lr=0.0005)
     #optimizer = optim.SGD(model.parameters(), lr=0.0001, momentum=0.9)
-    epochs = 50
+    epochs = 100
     train_losses = []
     val_losses = []
     train_accuracies = []
@@ -102,6 +103,9 @@ def train(args):
 
     # TRAIN
     n_batches = np.ceil(len(train_dataset)/batch_size)
+
+    early_stopping = 5
+    losses = collections.deque(maxlen=early_stopping)
     for epoch in range(epochs):
         model.train()
         print("EPOCH", epoch)
@@ -127,6 +131,10 @@ def train(args):
         train_accuracies.append(evaluate_model(model, train_dataset))
         val_accuracies.append(evaluate_model(model, val_dataset))
         print("Train/val loss: \t%.4f\t%.4f\t\tTrain/val accuracy: \t%.2f\t%.2f" % (epoch_loss, val_losses[-1], train_accuracies[-1], val_accuracies[-1]))
+
+        losses.append(val_losses[-1])
+        if len(losses) == early_stopping and losses[-1] >= max(losses):
+            break
 
         if epoch == 50 or epoch == 100 or epoch == 150:
             for g in optimizer.param_groups:
@@ -194,8 +202,8 @@ if __name__ == "__main__":
                         help='')
     parser.add_argument('--load-path', type=str,
                         # required=True,
-                        #default=None,
-                        default='models/trained_models/model_name.pth',
+                        default=None,
+                        #default='models/trained_models/model_name.pth',
                         help='')
 
     args = parser.parse_args()
