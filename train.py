@@ -12,6 +12,7 @@ from multi_hot_encoding import get_dataset_multi_hot
 from models.lstm_chord_models import LSTMChord, LSTMChordEmbedding, LSTMChordEmbedding_Multihot
 from models.lstm_melody_models import LSTM_Multihot, LSTM_Multihot_MLP
 from argparse import ArgumentParser
+import pickle
 import pdb
 
 # Andrew's
@@ -161,7 +162,7 @@ def train(args):
         torch.save(model.state_dict(), args.save_path)
 
 def load_model(load_path):
-    train_dataset, val_dataset, test_dataset, input_size, target_size = get_dataset_multi_hot(choice=8)
+    train_dataset, val_dataset, test_dataset, input_size, target_size = get_dataset_multi_hot(choice=1)
 
     # Create model
     #model = LSTMChord(vocab_size, lstm_hidden_size=16)
@@ -179,6 +180,10 @@ def load_model(load_path):
     te_acc = evaluate_model(model, test_dataset)
     print('Test accuracy:\t%.2f' % te_acc)
 
+    with open('new_chord_map.pkl', 'rb') as f:
+        new_chord_map = pickle.load(f)
+        new_chord_map = dict((v,k) for k,v in new_chord_map.items())
+
     # QUALITATIVE STUDY
     while True:
         print('Test dataset of length %d. Enter the index of a sample or (q)uit' % len(test_dataset))
@@ -195,7 +200,9 @@ def load_model(load_path):
 
         preds = model(inputs, lengths)
         preds = preds.argmax(dim=2).flatten()
+        preds_chord = [new_chord_map[key.item()] for key in preds]
         targets = targets.flatten()
+        targets_chord = [new_chord_map[key.item()] for key in targets]
 
         # Mask the outputs and targets
         mask = targets != -1
@@ -205,12 +212,15 @@ def load_model(load_path):
 
         inputs.squeeze()
         print('Number chords in the song: ', inputs.shape[0])
-        print('Input')
-        print(inputs)
+        print('Preds') 
+        print(preds)
         print('Target') 
         print(targets[mask])
+        print('Preds') 
+        print(preds_chord)
+        print('Target') 
+        print(targets_chord)
         print('Accuracy in this song: %.2f' % acc.item())
-        pdb.set_trace()
 
 
 if __name__ == "__main__":
@@ -224,9 +234,8 @@ if __name__ == "__main__":
                         help='')
     parser.add_argument('--load-path', type=str,
                         # required=True,
-
                         #default=None,
-                        default='models/trained_models/archit_1_dataset_8.pth',
+                        default='models/trained_models/model_name.pth',
                         help='')
 
     args = parser.parse_args()
