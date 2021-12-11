@@ -102,32 +102,30 @@ beats['chord_map'] = beats['chord_map'].str.replace('m','-')
 chord_info_importance = beats['chord_map'].value_counts()
 
 
-''' Create 2 options depending if we keep the #/b 
-from the added notes higher than 7 '''
+# ''' Create 2 options depending if we keep the #/b 
+# from the added notes higher than 7 '''
 
 
-beats['chord_map2'] = beats['chord_map']
+# beats['chord_map2'] = beats['chord_map']
 old_added_notes = ['9#','9b', '9', '11b', '11#', '11', '13b', '13#', '13']
-note_choices = ['7#', '7b', '7', '7b', '7#', '7', '7b', '7#', '7']
+# note_choices = ['7#', '7b', '7', '7b', '7#', '7', '7b', '7#', '7']
 
 
 for i in old_added_notes:
     beats['chord_map'] = beats['chord_map'].str.replace(i,'7') #map all to 7
     beats['chord_map'] = beats['chord_map'].str.replace('77','7') #to avoid repeated 7
 
-<<<<<<< Updated upstream
-beats['chord_extra'] = beats['Final_pitch'].str.cat(beats['chord_map'])
-=======
-for i, j in zip(old_added_notes, note_choices):
-    beats['chord_map2'] = beats['chord_map2'].str.replace(i,j) #map to 7 but keep the flat/sharp info
-    beats['chord_map2'] = beats['chord_map2'].str.replace('77','7')
->>>>>>> Stashed changes
 
-#Remove repetitions
-beats['chord_map2'] = beats['chord_map2'].str.replace('7b7b','7b')
-beats['chord_map2'] = beats['chord_map2'].str.replace('7b7','7b')
-beats['chord_map2'] = beats['chord_map2'].str.replace('7#7#','7#')
-beats['chord_map2'] = beats['chord_map2'].str.replace('7#7','7#')
+# for i, j in zip(old_added_notes, note_choices):
+#     beats['chord_map2'] = beats['chord_map2'].str.replace(i,j) #map to 7 but keep the flat/sharp info
+#     beats['chord_map2'] = beats['chord_map2'].str.replace('77','7')
+
+
+# #Remove repetitions
+# beats['chord_map2'] = beats['chord_map2'].str.replace('7b7b','7b')
+# beats['chord_map2'] = beats['chord_map2'].str.replace('7b7','7b')
+# beats['chord_map2'] = beats['chord_map2'].str.replace('7#7#','7#')
+# beats['chord_map2'] = beats['chord_map2'].str.replace('7#7','7#')
 
    #create unique vectors for each mapping
 mapping1 = pd.unique(beats['chord_map']) 
@@ -158,20 +156,6 @@ chord_dict.to_csv(pathlib.os.path.join(project_path,'Chord_Dictionary.csv'),
 
 #%%  Dataset 3: 3 VECTORS, ONE FOR THE ROOT PITCH, A SECOND FOR THE TRIAD FORM AND A THIRD FOR ADDED NOTES
 
-<<<<<<< Updated upstream
-    
-    
-modes = ['o', '-', '+', 'sus', 'alt']
-beats['mode'] = '0'
-beats['extra_note'] = beats['chord_map']
-
-
-for i in modes:
-    beats.loc[beats['chord_map'].str.contains(i, regex = False) == True, 'mode'] = i
-    beats['extra_note'] = beats['extra_note'].str.replace(i,'', regex = False)
-    
-beats['extra_note'] = beats['extra_note'].str.replace('C','')
-=======
 '''The 2 vectors will be created using the first mapping of the previous dataset.'''    
 
 ''' TRIAD VECTOR '''
@@ -190,7 +174,6 @@ total_mode = pd.unique(beats['triad'])
 
 
 ''' ADDED NOTE VECTOR '''
->>>>>>> Stashed changes
     
 beats['added_note'] = beats['chord_map']
 
