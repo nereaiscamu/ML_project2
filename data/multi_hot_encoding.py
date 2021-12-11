@@ -1,7 +1,7 @@
 from sqlalchemy import create_engine
 import pandas as pd
 import numpy as np
-from dataset import OneHot_VLDataset, MultiHot_VLDataset, MultiHot_MelodyEncoded_VLDataset, MultiHot_MelodyBassEncoded_VLDataset, MultiHot_MelodyDurationEncoded_VLDataset
+from dataset import OneHot_VLDataset, MultiHot_VLDataset, MultiHot_MelodyEncoded_VLDataset, MultiHot_MelodyBassEncoded_VLDataset, MultiHot_MelodyDurationEncoded_VLDataset, MultiHot_MelodyWeighted_VLDataset
 import pdb
 
 import sys
@@ -346,7 +346,7 @@ def get_dataset_multi_hot(choice=1, test_split=0.2):
         beats, vocab_sizes, target_size = get_dataset3(melody_raw, beats_raw)
     if choice == 4:
         beats, vocab_sizes, target_size = get_dataset4(melody_raw, beats_raw)
-    if choice == 5 or choice == 6 or choice == 7:
+    if choice == 5 or choice == 6 or choice == 7 or choice== 8:
         beats, vocab_sizes, target_size = get_dataset5(melody_raw, beats_raw)
 
     sequences = []          # store chord as multi-hot
@@ -379,7 +379,7 @@ def get_dataset_multi_hot(choice=1, test_split=0.2):
                     sequences.append(np.array([seq_pitch, seq_chord_info]).T)
                 else:
                     sequences.append(np.array([seq_pitch, seq_mode, seq_extra_note]).T)
-                    if choice == 4:     # melody encoding
+                    if choice == 4 or choice == 8:     # melody encoding
                         melody_encoding = song['pitch_sequence']
                         melodies.append(np.array(melody_encoding))
                     if choice == 5:     # bass encoding
@@ -434,11 +434,17 @@ def get_dataset_multi_hot(choice=1, test_split=0.2):
 
     if choice == 7:
         train_mel = melodies[:split_idx]
-        test_mel = melodies[split_idx:]
-        #train_duration = duration_sequence[:split_idx]
-        #test_duration = duration_sequence[split_idx:]        
+        test_mel = melodies[split_idx:]        
         train_dataset = MultiHot_MelodyDurationEncoded_VLDataset(train_seq, train_mel, train_target_seq, vocab_sizes)
         test_dataset = MultiHot_MelodyDurationEncoded_VLDataset(test_seq, test_mel, test_target_seq, vocab_sizes)
+        input_size = sum(vocab_sizes) + 12
+        return train_dataset, test_dataset, input_size, target_size
+
+    if choice == 8:
+        train_mel = melodies[:split_idx]
+        test_mel = melodies[split_idx:]       
+        train_dataset = MultiHot_MelodyWeighted_VLDataset(train_seq, train_mel, train_target_seq, vocab_sizes)
+        test_dataset = MultiHot_MelodyWeighted_VLDataset(test_seq, test_mel, test_target_seq, vocab_sizes)
         input_size = sum(vocab_sizes) + 12
         return train_dataset, test_dataset, input_size, target_size
 

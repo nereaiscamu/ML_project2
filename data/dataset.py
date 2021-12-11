@@ -248,9 +248,12 @@ class MultiHot_MelodyDurationEncoded_VLDataset(Dataset):
 
         for i, (pitch_seq, duration_seq) in enumerate(zip(pitch_sequences, duration_sequences)):
             # take only last 10 notes
-            if len(pitch_seq) >= 10:
+            if len(pitch_seq) > 10:
                 pitch_seq = pitch_seq[-10:]
                 duration_seq = duration_seq[-10:]
+
+            duration_seq = np.array(duration_seq)
+            duration_seq = np.where(duration_seq < 0, 0, duration_seq)
 
             #Create weighted array
             # divider = np.arange(float(2*len(pitch_seq)), step=2)
@@ -260,10 +263,74 @@ class MultiHot_MelodyDurationEncoded_VLDataset(Dataset):
             # TODO series gets too big if we take all the notes
             divider = np.geomspace(1, np.power(2, len(pitch_seq)-1), num=len(pitch_seq))
 
-            if not -1 in pitch_seq:
-                melody_encoded[i, pitch_seq] += duration_seq / divider
-        if sum(melody_encoded[i]) > 0:
-            melody_encoded[i] /= sum(melody_encoded[i])
+            melody_encoded[i, pitch_seq] += duration_seq / divider
+            
+            if sum(melody_encoded[i]) > 0:
+                melody_encoded[i] /= sum(melody_encoded[i])
+
+        input_ = np.concatenate((encoded_multihot, melody_encoded), axis=1)
+
+        # Pad target with some INVALID value (-1)
+        target = np.ones(self.max_length - 1) * -1
+        target[:sequence_length - 1] = target_sequence[1:]
+        return {
+            "input": torch.tensor(input_[:-1]),
+            "target": torch.tensor(target).long(),
+            "length": sequence_length - 1,  # Return the length
+        }
+
+
+class MultiHot_MelodyWeighted_VLDataset(Dataset):
+    '''
+    Variable length dataset for multi-hot CHORD and MELODY embedding
+    '''
+    def __init__(self, sequences, melody_encoding, target_sequence, vocab_sizes):
+        self.sequences = sequences
+        self.melody_encoding = melody_encoding
+        self.target_sequence = target_sequence
+        self.vocab_sizes = vocab_sizes
+        self.num_one_hot = len(vocab_sizes)   # Number of one-hot vectors that form the multi-hot
+
+        self.max_length = max(map(len, self.sequences))  # Add max length
+
+    def __len__(self):
+        return len(self.sequences)
+
+    def __getitem__(self, i):
+        sequence = self.sequences[i].astype(int)
+        melody = self.melody_encoding[i]
+        target_sequence = self.target_sequence[i]
+        sequence_length = sequence.shape[0]
+
+        # Encode CHORD from sequence to multi-hot
+        encoded_multihot = None
+        for n in range(self.num_one_hot):
+            if encoded_multihot is None:
+                encoded_onehot = np.zeros((self.max_length, self.vocab_sizes[n]))
+                encoded_onehot[np.arange(sequence_length), sequence[:,n]] = 1
+                encoded_multihot = encoded_onehot
+
+            else:
+                encoded_onehot = np.zeros((self.max_length, self.vocab_sizes[n]))
+                encoded_onehot[np.arange(sequence_length), sequence[:,n]] = 1 
+                encoded_multihot = np.concatenate((encoded_multihot, encoded_onehot), axis=1)
+
+        # Encode MELODY from sequence to embedding
+        melody_encoded = np.zeros((self.max_length, 12))
+        for i, pitch_sequence in enumerate(melody):
+            # take only last 10 notes
+            if len(pitch_sequence) > 10:
+                pitch_sequence = pitch_sequence[-10:]
+
+            divider = np.geomspace(1, np.power(2, len(pitch_sequence)-1), num=len(pitch_sequence))
+
+            for idx_div, note in enumerate(pitch_sequence):
+                if note != -1:
+                    melody_encoded[i, note] += divider[idx_div]
+
+            if sum(melody_encoded[i]) > 0:
+                melody_encoded[i] /= sum(melody_encoded[i])
+
         input_ = np.concatenate((encoded_multihot, melody_encoded), axis=1)
 
         # Pad target with some INVALID value (-1)
