@@ -80,7 +80,7 @@ def train(args):
     batch_size = 20
 
     #train_dataset, val_dataset, test_dataset, input_size, target_size = get_dataset_multi_hot_new_encoding(choice=2)
-    train_dataset, val_dataset, test_dataset, input_size, target_size = get_dataset_multi_hot(choice=8)
+    train_dataset, val_dataset, test_dataset, input_size, target_size = get_dataset_multi_hot(choice=1)
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True) 
 
     # Create model
@@ -95,7 +95,11 @@ def train(args):
     #optimizer = optim.Adam(model.parameters(), lr=0.01, weight_decay=0.00001)
     #optimizer = optim.SGD(model.parameters(), lr=0.0005)
     #optimizer = optim.SGD(model.parameters(), lr=0.0001, momentum=0.9)
+<<<<<<< HEAD
     epochs = 100
+=======
+    epochs = 2
+>>>>>>> efd9cb621f4cc1ab02f740a798964a9bed02eff2
     train_losses = []
     val_losses = []
     train_accuracies = []
