@@ -56,69 +56,100 @@ def preprocess_chords(beats):
 
     '''Now we need to consider that C# = Db --> map all 'b' to the equivalent '#' pitch'''
 
-    beats['final_pitch'] = beats['complete_pitch']
-    beats.loc[ beats['complete_pitch'] == 'Db', "final_pitch"] = 'C#'
-    beats.loc[ beats['complete_pitch'] == 'Eb', "final_pitch"] = 'D#'
-    beats.loc[ beats['complete_pitch'] == 'Fb', "final_pitch"] = 'E'
-    beats.loc[ beats['complete_pitch'] == 'Gb', "final_pitch"] = 'F#'
-    beats.loc[ beats['complete_pitch'] == 'Ab', "final_pitch"] = 'G#'
-    beats.loc[ beats['complete_pitch'] == 'Bb', "final_pitch"] = 'A#'
-    beats.loc[ beats['complete_pitch'] == 'Cb', "final_pitch"] = 'B'
+    beats['Root_pitch'] = beats['complete_pitch']
+    beats.loc[ beats['complete_pitch'] == 'Db', "Root_pitch"] = 'C#'
+    beats.loc[ beats['complete_pitch'] == 'Eb', "Root_pitch"] = 'D#'
+    beats.loc[ beats['complete_pitch'] == 'Fb', "Root_pitch"] = 'E'
+    beats.loc[ beats['complete_pitch'] == 'Gb', "Root_pitch"] = 'F#'
+    beats.loc[ beats['complete_pitch'] == 'Ab', "Root_pitch"] = 'G#'
+    beats.loc[ beats['complete_pitch'] == 'Bb', "Root_pitch"] = 'A#'
+    beats.loc[ beats['complete_pitch'] == 'Cb', "Root_pitch"] = 'B'
 
     # *** Now only 12 pitches + No Chord ***
 
-    beats = beats[['beatid', 'melid', 'chord', 'final_pitch', 'chord_info', 'bar', 'beat', 'bass_pitch']] #remove useless columns
-
-    beats['chord_info'] = beats['chord_info'].str.replace('\/(.*)','')
-    beats['chord_info'] = beats['chord_info'].str.replace('j','')
-    beats['chord_info'] = beats['chord_info'].str.replace('m','-')
-    chord_info_importance = beats['chord_info'].value_counts()
-
-    info_to_remove = ['9#','9b', '9', '11b', '11#', '11', '13b', '13#', '13', 'C']
-    for j in info_to_remove: 
-        beats['chord_info'] = beats['chord_info'].str.replace(j,'')
+    beats = beats[['beatid', 'melid', 'chord', 'Root_pitch', 'chord_info', 'bar', 'beat', 'bass_pitch']] #remove useless columns
     
-    # Save new chord 
-    beats['new_chord'] = beats['final_pitch'].str.cat(beats['chord_info'])
+    # NOW WE ADD A SECOND VECTOR WITH ALL THE INFO ABOUT THE CHORD BUT THE ROOT PITCH
 
-    # 'chord_info' contains 14 elements. Option 1: Root pitch (13) + Chord_info (14)
-    chord_info_all = pd.unique(beats['chord_info'])
+    ''' Remove or change useless information'''
 
-    modes = ['o', '-', '+', 'sus', 'alt']
-    beats['mode'] = '0'
-    beats['extra_note'] = beats['chord_info']
+    beats['chord_map'] = beats['chord_info']
+    beats['chord_map'] = beats['chord_map'].str.replace('\/(.*)','')
+    beats['chord_map'] = beats['chord_map'].str.replace('m','-')
+    
+    old_added_notes = ['9#','9b', '9', '11b', '11#', '11', '13b', '13#', '13']
+    
+    
+    for i in old_added_notes:
+        beats['chord_map'] = beats['chord_map'].str.replace(i,'7') #map all to 7
+        beats['chord_map'] = beats['chord_map'].str.replace('77','7') #to avoid repeated 7
+        
+    beats['new_chord'] = beats['Root_pitch'].str.cat(beats['chord_map'])
 
+    
+    #  Dataset 3: 3 VECTORS, ONE FOR THE ROOT PITCH, A SECOND FOR THE TRIAD FORM AND A THIRD FOR ADDED NOTES
+    
+    '''The 2 vectors will be created using the first mapping of the previous dataset.'''    
+    
+    ''' TRIAD VECTOR '''
+    beats['triad'] = 'M'    #initialise the triad form to major
+    modes = ['o', '-', '+', 'sus'] #define other forms
+    
+    
     for i in modes:
-        beats.loc[beats['chord_info'].str.contains(i, regex = False) == True, 'mode'] = i
-        beats['extra_note'] = beats['extra_note'].str.replace(i,'', regex = False)
+        beats.loc[beats['chord_map'].str.contains(i, regex = False) == True, 
+                  'triad' ] = i #fill the triad variable with the information in the chord mapping
     
-    # 'mode' contains 6 elements. 'extra_note' contains 4 elements. Option 2: Root pitch (13) + mode (6) + extra_node (4)
+    beats.loc[beats['chord_map'].str.contains('7b5', regex = False) == True, 
+              'triad' ] = 'half' #Add the half-diminished form, only for 7b5 chords
+        
+    
+    ''' ADDED NOTE VECTOR '''
+        
+    beats['added_note'] = beats['chord_map']
+    
+    #remove all information which is already in the triad form vector 
+    # (7alt --> mapped to 7)
+    remove_note_info = ['-', '+', 'sus',  'b5', 'alt'] 
+    for i in remove_note_info:
+        beats['added_note'] = beats['added_note'].str.replace(i,'')
+    
+    # 'C' from  No Chord is removed
+    beats['added_note'] = beats['added_note'].str.replace('C','')
+    
+    # in the added note, diminished is only kept when it affects the 7th note
+    # if only for the triad, already in the previous vector
+    beats.loc[ beats['added_note'] == 'o', "added_note"] = ''
+    beats.loc[ beats['added_note'] == '7', "added_note"] = 'm7'
+    beats.loc[beats['added_note'] == '', 'added_note'] = 'none'
+        
+    # 'triad' contains 6 elements. 'added_note' contains 6 elements. Option 2: Root pitch (13) + triad (6) + extra_node (6)
 
     return beats
 
 def encode_chords_1(table):
     unique_chords = pd.unique(table['new_chord'])
-    unique_pitch = pd.unique(table['final_pitch'])
-    unique_mode = pd.unique(table['mode'])
-    unique_extra_note = pd.unique(table['extra_note'])
+    unique_pitch = pd.unique(table['Root_pitch'])
+    unique_triad = pd.unique(table['triad'])
+    unique_added_note = pd.unique(table['added_note'])
     
     # Encode each final pitch to a number by order of appearnce
-    final_pitch_map = {}
+    Root_pitch_map = {}
     for i, c in enumerate(unique_pitch):
-        final_pitch_map[c] = i
-    table['final_pitch_num'] = table['final_pitch'].map(final_pitch_map)
-
-    # Encode mode
-    mode_map = {}
-    for i, c in enumerate(unique_mode):
-        mode_map[c] = i
-    table['mode_num'] = table['mode'].map(mode_map)
+        Root_pitch_map[c] = i
+    table['Root_pitch_num'] = table['Root_pitch'].map(Root_pitch_map)
 
     # Encode extra note
-    extra_note_map = {}
-    for i, c in enumerate(unique_extra_note):
-        extra_note_map[c] = i
-    table['extra_note_num'] = table['extra_note'].map(extra_note_map)
+    triad_map = {}
+    for i, c in enumerate(unique_triad):
+        triad_map[c] = i
+    table['triad_num'] = table['triad'].map(triad_map)
+
+    # Encode extra note
+    added_note_map = {}
+    for i, c in enumerate(unique_added_note):
+        added_note_map[c] = i
+    table['added_note_num'] = table['added_note'].map(added_note_map)
 
     # Encode new chord
     new_chord_map = {}
@@ -130,15 +161,15 @@ def encode_chords_1(table):
 
 def encode_chords_2(table):
     unique_chords = pd.unique(table['new_chord'])
-    unique_pitch = pd.unique(table['final_pitch'])
+    unique_pitch = pd.unique(table['Root_pitch'])
     unique_chord_info = pd.unique(table['chord_info'])
-    vocab_sizes = [len(unique_pitch), len(unique_chord_info)]
+    #vocab_sizes = [len(unique_pitch), len(unique_chord_info)]
     
     # Encode each final pitch to a number by order of appearnce
-    final_pitch_map = {}
+    Root_pitch_map = {}
     for i, c in enumerate(unique_pitch):
-        final_pitch_map[c] = i
-    table['final_pitch_num'] = table['final_pitch'].map(final_pitch_map)
+        Root_pitch_map[c] = i
+    table['Root_pitch_num'] = table['Root_pitch'].map(Root_pitch_map)
 
     # Encode chord map
     chord_info_map = {}
@@ -158,7 +189,7 @@ def get_dataset_only_chord_1(beats):
     '''
     Dataset 2: Multi-hot. Combination of 3 One-Hot vectors:
         (1): Root pitch and '#'. Vocab size = 13
-        (2): Mode. Vocab size = 6
+        (2): triad. Vocab size = 6
         (3): Extra note. Vocab size = 4
     '''
     beats['chord'].replace('', np.nan, inplace=True)
@@ -167,17 +198,17 @@ def get_dataset_only_chord_1(beats):
     beats = encode_chords_1(beats)
 
     unique_chords = pd.unique(beats['new_chord'])
-    unique_pitch = pd.unique(beats['final_pitch'])
-    unique_mode = pd.unique(beats['mode'])
-    unique_extra_note = pd.unique(beats['extra_note'])
-    vocab_sizes = [len(unique_pitch), len(unique_mode), len(unique_extra_note)]
+    unique_pitch = pd.unique(beats['Root_pitch'])
+    unique_triad = pd.unique(beats['triad'])
+    unique_added_note = pd.unique(beats['added_note'])
+    vocab_sizes = [len(unique_pitch), len(unique_triad), len(unique_added_note)]
     target_size = len(unique_chords)
 
     print('\nUsing a total chord vocab size of %d (One-hot)' % len(unique_chords))
     print('Multi-hot input:')
     print('\t(1): Root pitch and #. Vocab size of %d' % len(unique_pitch))
-    print('\t(2): Mode. Vocab size of %d' % len(unique_mode))
-    print('\t(3): Extra note. Vocab size of %d\n' % len(unique_extra_note))
+    print('\t(2): triad. Vocab size of %d' % len(unique_triad))
+    print('\t(3): Extra note. Vocab size of %d\n' % len(unique_added_note))
 
     return beats, vocab_sizes, target_size
 
@@ -194,7 +225,7 @@ def get_dataset_only_chord_2(beats):
     beats = encode_chords_2(beats)
 
     unique_chords = pd.unique(beats['new_chord'])
-    unique_pitch = pd.unique(beats['final_pitch'])
+    unique_pitch = pd.unique(beats['Root_pitch'])
     unique_chord_info = pd.unique(beats['chord_info'])
     vocab_sizes = [len(unique_pitch), len(unique_chord_info)]
     target_size = len(unique_chords)
@@ -206,8 +237,6 @@ def get_dataset_only_chord_2(beats):
 
     return beats, vocab_sizes, target_size
 
-
-def get_dataset3(melody, beats):
     """
     Dataset 3: Multi-hot. Combination of 3 One-Hot vectors for chord encoding + Melody encoding
         (1): Root pitch and '#'. Vocab size = 13
@@ -221,17 +250,17 @@ def get_dataset3(melody, beats):
     mel_beats = encode_pitch(melody, beats_encoded, pitch_sequence=False)
 
     unique_chords = pd.unique(mel_beats['new_chord'])
-    unique_pitch = pd.unique(mel_beats['final_pitch'])
+    unique_pitch = pd.unique(mel_beats['Root_pitch'])
     unique_minor = pd.unique(mel_beats['minor'])
     unique_chord_info = pd.unique(mel_beats['chord_info'])
     unique_notes = pd.unique(mel_beats['pitch_encoded'])
     vocab_sizes = [len(unique_pitch), len(unique_minor), len(unique_chord_info), len(unique_notes)]
     
     # Encode each final pitch to a number by order of appearnce
-    final_pitch_map = {}
+    Root_pitch_map = {}
     for i, c in enumerate(unique_pitch):
-        final_pitch_map[c] = i
-    mel_beats['final_pitch_num'] = mel_beats['final_pitch'].map(final_pitch_map)
+        Root_pitch_map[c] = i
+    mel_beats['Root_pitch_num'] = mel_beats['Root_pitch'].map(Root_pitch_map)
 
     # Encode chord info
     chord_info_map = {}
@@ -272,18 +301,18 @@ def get_dataset4(melody, beats):
     mel_beats = encode_pitch(melody, beats, pitch_sequence=True)
 
     unique_chords = pd.unique(mel_beats['new_chord'])
-    unique_pitch = pd.unique(mel_beats['final_pitch'])
-    unique_mode = pd.unique(beats['mode'])
-    unique_extra_note = pd.unique(beats['extra_note'])
+    unique_pitch = pd.unique(mel_beats['Root_pitch'])
+    unique_triad = pd.unique(beats['triad'])
+    unique_added_note = pd.unique(beats['added_note'])
     unique_notes = pd.unique(mel_beats['pitch_encoded'])
-    vocab_sizes = [len(unique_pitch), len(unique_mode), len(unique_extra_note)]
+    vocab_sizes = [len(unique_pitch), len(unique_triad), len(unique_added_note)]
     target_size = len(unique_chords)
 
     print('\nUsing a total chord vocab size of %d (One-hot)' % len(unique_chords))
     print('Multi-hot input:')
     print('\t(1): Root pitch and #. Vocab size of %d' % len(unique_pitch))
-    print('\t(2): Mode. Vocab size of %d' % len(unique_mode))
-    print('\t(3): Extra note. Vocab size of %d' % len(unique_extra_note))
+    print('\t(2): triad. Vocab size of %d' % len(unique_triad))
+    print('\t(3): Extra note. Vocab size of %d' % len(unique_added_note))
     print('\t(4): Melody pitch. Vocab size of %d\n' % len(unique_notes))
 
     return mel_beats, vocab_sizes, target_size
@@ -305,18 +334,18 @@ def get_dataset5(melody, beats):
     beats_mel = encode_chords_1(beats_mel)
 
     unique_chords = pd.unique(beats_mel['new_chord'])
-    unique_pitch = pd.unique(beats_mel['final_pitch'])
-    unique_mode = pd.unique(beats_mel['mode'])
-    unique_extra_note = pd.unique(beats_mel['extra_note'])
+    unique_pitch = pd.unique(beats_mel['Root_pitch'])
+    unique_triad = pd.unique(beats_mel['triad'])
+    unique_added_note = pd.unique(beats_mel['added_note'])
     unique_notes = pd.unique(beats_mel['pitch_encoded'])
-    vocab_sizes = [len(unique_pitch), len(unique_mode), len(unique_extra_note)]
+    vocab_sizes = [len(unique_pitch), len(unique_triad), len(unique_added_note)]
     target_size = len(unique_chords)
     
     print('\nUsing a total chord vocab size of %d (One-hot)' % len(unique_chords))
     print('Multi-hot input:')
     print('\t(1): Root pitch and #. Vocab size of %d' % len(unique_pitch))
-    print('\t(2): Mode. Vocab size of %d' % len(unique_mode))
-    print('\t(3): Extra note. Vocab size of %d' % len(unique_extra_note))
+    print('\t(2): triad. Vocab size of %d' % len(unique_triad))
+    print('\t(3): Extra note. Vocab size of %d' % len(unique_added_note))
     print('\t(4): Melody pitch. Vocab size of %d\n' % len(unique_notes))
 
     return beats_mel, vocab_sizes, target_size
@@ -342,8 +371,6 @@ def get_dataset_multi_hot(choice=1, val_split=0.1, test_split=0.1):
         beats, vocab_sizes, target_size = get_dataset_only_chord_1(beats_raw)
     if choice == 2:
         beats, vocab_sizes, target_size = get_dataset_only_chord_2(beats_raw)
-    if choice == 3:
-        beats, vocab_sizes, target_size = get_dataset3(melody_raw, beats_raw)
     if choice == 4:
         beats, vocab_sizes, target_size = get_dataset4(melody_raw, beats_raw)
     if choice == 5 or choice == 6 or choice == 7 or choice== 8:
@@ -358,14 +385,14 @@ def get_dataset_multi_hot(choice=1, val_split=0.1, test_split=0.1):
     # for each song load its chord seq
     for i in range(1, num_mels+1):
         song = beats.loc[beats['melid'] == i]
-        seq_pitch = song['final_pitch_num'].to_numpy()
+        seq_pitch = song['Root_pitch_num'].to_numpy()
         seq_one_hot = song['new_chord_num'].to_numpy()
 
         if choice == 2:
             seq_chord_info = song['chord_info_num'].to_numpy()
         else:
-            seq_mode = song['mode_num'].to_numpy()
-            seq_extra_note = song['extra_note_num'].to_numpy()
+            seq_triad = song['triad_num'].to_numpy()
+            seq_added_note = song['added_note_num'].to_numpy()
 
         if len(seq_pitch) > 1:
             # One input for each melody note
@@ -378,7 +405,7 @@ def get_dataset_multi_hot(choice=1, val_split=0.1, test_split=0.1):
                 if choice == 2:
                     sequences.append(np.array([seq_pitch, seq_chord_info]).T)
                 else:
-                    sequences.append(np.array([seq_pitch, seq_mode, seq_extra_note]).T)
+                    sequences.append(np.array([seq_pitch, seq_triad, seq_added_note]).T)
                     if choice == 4 or choice == 8:     # melody encoding
                         melody_encoding = song['pitch_sequence']
                         melodies.append(np.array(melody_encoding))
