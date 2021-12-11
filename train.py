@@ -161,7 +161,7 @@ def train(args):
         torch.save(model.state_dict(), args.save_path)
 
 def load_model(load_path):
-    train_dataset, val_dataset, test_dataset, input_size, target_size = get_dataset_multi_hot(choice=4)
+    train_dataset, val_dataset, test_dataset, input_size, target_size = get_dataset_multi_hot(choice=8)
 
     # Create model
     #model = LSTMChord(vocab_size, lstm_hidden_size=16)
@@ -179,7 +179,38 @@ def load_model(load_path):
     te_acc = evaluate_model(model, test_dataset)
     print('Test accuracy:\t%.2f' % te_acc)
 
+    # QUALITATIVE STUDY
+    while True:
+        print('Test dataset of length %d. Enter the index of a sample or (q)uit' % len(test_dataset))
+        input_ = input()
+        if input_ == 'q':
+            break
+        sample_id = int(input_)
+        assert sample_id < len(test_dataset) and sample_id >= 0, 'Invalid sample index'
 
+        sample = test_dataset.__getitem__(sample_id)
+        inputs = sample["input"].float().unsqueeze(0)   # need to add dim for batch_size=1
+        targets = sample["target"]
+        lengths = [sample["length"]]
+
+        preds = model(inputs, lengths)
+        preds = preds.argmax(dim=2).flatten()
+        targets = targets.flatten()
+
+        # Mask the outputs and targets
+        mask = targets != -1
+        
+        correct = (preds == targets[mask]).sum()
+        acc = correct/sum(mask) * 100
+
+        inputs.squeeze()
+        print('Number chords in the song: ', inputs.shape[0])
+        print('Input')
+        print(inputs)
+        print('Target') 
+        print(targets[mask])
+        print('Accuracy in this song: %.2f' % acc.item())
+        pdb.set_trace()
 
 
 if __name__ == "__main__":
@@ -193,8 +224,8 @@ if __name__ == "__main__":
                         help='')
     parser.add_argument('--load-path', type=str,
                         # required=True,
-                        default=None,
-                        #default='models/trained_models/model_name.pth',
+                        #default=None,
+                        default='models/trained_models/archit_1_dataset_8.pth',
                         help='')
 
     args = parser.parse_args()
