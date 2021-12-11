@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 from dataset import OneHot_VLDataset, MultiHot_VLDataset, MultiHot_MelodyEncoded_VLDataset, MultiHot_MelodyBassEncoded_VLDataset, MultiHot_MelodyDurationEncoded_VLDataset, MultiHot_MelodyWeighted_VLDataset
 import pdb
+import pickle
 
 import sys
 sys.path.append('../')
@@ -156,6 +157,10 @@ def encode_chords_1(table):
     for i, c in enumerate(unique_chords):
         new_chord_map[c] = i
     table['new_chord_num'] = table['new_chord'].map(new_chord_map)
+    
+    a_file = open("new_chord_map.pkl", "wb")
+    pickle.dump(new_chord_map, a_file)
+    a_file.close()
 
     return table
 
@@ -182,6 +187,8 @@ def encode_chords_2(table):
     for i, c in enumerate(unique_chords):
         new_chord_map[c] = i
     table['new_chord_num'] = table['new_chord'].map(new_chord_map)
+    
+
 
     return table
 

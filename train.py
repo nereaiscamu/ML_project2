@@ -69,7 +69,7 @@ def evaluate_model(model, dataset):
         total += sum(mask)
     
 
-    acc = 100 * correct/total    
+    acc = 100 * correct.item()/total    
     return acc
          
 
@@ -194,8 +194,8 @@ if __name__ == "__main__":
                         help='')
     parser.add_argument('--load-path', type=str,
                         # required=True,
-                        #default=None,
-                        default='models/trained_models/model_name.pth',
+                        default=None,
+                        #default='models/trained_models/model_name.pth',
                         help='')
 
     args = parser.parse_args()
