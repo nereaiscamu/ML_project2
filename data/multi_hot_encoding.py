@@ -434,10 +434,10 @@ def get_dataset_multi_hot(choice=1, val_split=0.1, test_split=0.1):
             target_sequence.append(seq_one_hot)
                 
     # convert to np array
-    sequences = np.array(sequences)
-    target_sequence = np.array(target_sequence)
-    melodies = np.array(melodies)
-    bass_pitch = np.array(bass_pitch)
+    sequences = np.array(sequences, dtype=object)
+    target_sequence = np.array(target_sequence, dtype=object)
+    melodies = np.array(melodies, dtype=object)
+    bass_pitch = np.array(bass_pitch, dtype=object)
 
     # Split Train/Val/Test
     random_idxs = np.random.permutation(len(sequences))
