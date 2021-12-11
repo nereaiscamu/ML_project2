@@ -94,11 +94,7 @@ def train(args):
     #optimizer = optim.Adam(model.parameters(), lr=0.01, weight_decay=0.00001)
     #optimizer = optim.SGD(model.parameters(), lr=0.0005)
     #optimizer = optim.SGD(model.parameters(), lr=0.0001, momentum=0.9)
-<<<<<<< HEAD
-    epochs = 1
-=======
     epochs = 50
->>>>>>> max
     train_losses = []
     val_losses = []
     train_accuracies = []
