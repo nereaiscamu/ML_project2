@@ -14,6 +14,7 @@ from models.lstm_melody_models import LSTM_Multihot, LSTM_Multihot_MLP
 from argparse import ArgumentParser
 import pickle
 import pdb
+import pandas as pd
 
 # Andrew's
 def get_loss_vl(outputs, targets):
@@ -187,6 +188,12 @@ def load_model(load_path):
     with open('models/new_chord_map.pkl', 'rb') as f:
         new_chord_map = pickle.load(f)
         new_chord_map = dict((v,k) for k,v in new_chord_map.items())
+    
+    song_list = list()
+    song_length = list()
+    song_accuracy = list()
+    preds_total = [[]]
+    targets_total = [[]]
 
     for i, song in enumerate(test_dataset):
         inputs = song["input"].float().unsqueeze(0)   # need to add dim for batch_size=1
@@ -199,8 +206,19 @@ def load_model(load_path):
         mask = targets != -1
         
         correct = (preds == targets[mask]).sum()
+        correct = correct.float()
         acc = correct/sum(mask) * 100
+        
+        preds_chord = [new_chord_map[key.item()] for key in preds]
+        targets_chord = [new_chord_map[key.item()] for key in targets[mask]]
+        
+        song_list.append(test_split[i]+1)
+        song_length.append(int(lengths[0]))
+        song_accuracy.append(round(float(acc),2))
+        preds_total.append(pd.DataFrame(preds_chord))
+        targets_total.append(pd.DataFrame(targets_chord))
         print('Test song %d\tSong ID: %d\tLength: %d\tAccuracy: %.2f' % (i, test_split[i]+1, lengths[0], acc))
+    
 
     # QUALITATIVE STUDY
     while True:
@@ -225,6 +243,7 @@ def load_model(load_path):
         targets_chord = [new_chord_map[key.item()] for key in targets[mask]]
 
         correct = (preds == targets[mask]).sum()
+        correct = correct.float()
         acc = correct/sum(mask) * 100
 
         print('Number chords in the song: ', lengths[0])
@@ -237,6 +256,8 @@ def load_model(load_path):
         print('\nTargets') 
         print(targets_chord)
         print('\nAccuracy in this song: %.2f\n' % acc.item())
+        
+        return song_list, song_length, song_accuracy, preds_total, targets_total
 
 
 if __name__ == "__main__":
