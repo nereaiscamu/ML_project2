@@ -262,6 +262,7 @@ class MultiHot_MelodyDurationEncoded_VLDataset(Dataset):
 
             # TODO series gets too big if we take all the notes
             divider = np.geomspace(1, np.power(2, len(pitch_seq)-1), num=len(pitch_seq))
+            divider = np.flipud(divider)
 
             melody_encoded[i, pitch_seq] += duration_seq / divider
             
@@ -322,7 +323,10 @@ class MultiHot_MelodyWeighted_VLDataset(Dataset):
             if len(pitch_sequence) > 10:
                 pitch_sequence = pitch_sequence[-10:]
 
+            # Create geometric series
             divider = np.geomspace(1, np.power(2, len(pitch_sequence)-1), num=len(pitch_sequence))
+            # Flip series
+            divider = np.flipud(divider)
 
             for idx_div, note in enumerate(pitch_sequence):
                 if note != -1:

@@ -98,6 +98,7 @@ def train(args):
     #optimizer = optim.SGD(model.parameters(), lr=0.0001, momentum=0.9)
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
     epochs = 100
 =======
     epochs = 2
@@ -105,6 +106,9 @@ def train(args):
 =======
     epochs = 50
 >>>>>>> 971c7497817a5bc7695e6ea6c58c3eb6a7b62db3
+=======
+    epochs = 200
+>>>>>>> max
     train_losses = []
     val_losses = []
     train_accuracies = []
@@ -113,7 +117,7 @@ def train(args):
     # TRAIN
     n_batches = np.ceil(len(train_dataset)/batch_size)
 
-    early_stopping = 5
+    early_stopping = 10
     losses = collections.deque(maxlen=early_stopping)
     for epoch in range(epochs):
         model.train()
@@ -267,12 +271,17 @@ if __name__ == "__main__":
     parser.add_argument('--load-path', type=str,
                         # required=True,
 <<<<<<< HEAD
+<<<<<<< HEAD
                         default=None,
                         #default='models/trained_models/model_name.pth',
 =======
                         #default=None,
                         default='models/trained_models/model_1_dataset_1_s42.pth',
 >>>>>>> 971c7497817a5bc7695e6ea6c58c3eb6a7b62db3
+=======
+                        #default=None,
+                        default='models/trained_models/model_1_dataset_1_s42.pth',
+>>>>>>> max
                         help='')
 
     args = parser.parse_args()
