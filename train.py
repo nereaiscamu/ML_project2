@@ -200,7 +200,7 @@ def load_model(load_path):
         
         correct = (preds == targets[mask]).sum()
         acc = correct/sum(mask) * 100
-        print('Test song %d\tSong ID: %d\tLength: %d\tAccuracy: %.2f' % (i, test_split[i], lengths[0], acc))
+        print('Test song %d\tSong ID: %d\tLength: %d\tAccuracy: %.2f' % (i, test_split[i]+1, lengths[0], acc))
 
     # QUALITATIVE STUDY
     while True:
