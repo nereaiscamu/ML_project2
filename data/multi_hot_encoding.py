@@ -158,7 +158,7 @@ def encode_chords_1(table):
         new_chord_map[c] = i
     table['new_chord_num'] = table['new_chord'].map(new_chord_map)
     
-    a_file = open("new_chord_map.pkl", "wb")
+    a_file = open("models/new_chord_map.pkl", "wb")
     pickle.dump(new_chord_map, a_file)
     a_file.close()
 
@@ -440,7 +440,7 @@ def get_dataset_multi_hot(choice=1, val_split=0.1, test_split=0.1):
     bass_pitch = np.array(bass_pitch, dtype=object)
 
     # Split Train/Val/Test
-    random_idxs = np.random.permutation(len(sequences))
+    random_idxs = np.random.RandomState(seed=42).permutation(len(sequences))    # this randomState has a localized effect, so the permutation will be the same always (and can use test set in load_model)
     split_1 = int(len(sequences)*(1-test_split-val_split))
     split_2 = int(len(sequences)*(1-test_split))
 

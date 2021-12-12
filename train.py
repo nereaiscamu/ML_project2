@@ -95,7 +95,7 @@ def train(args):
     #optimizer = optim.Adam(model.parameters(), lr=0.01, weight_decay=0.00001)
     #optimizer = optim.SGD(model.parameters(), lr=0.0005)
     #optimizer = optim.SGD(model.parameters(), lr=0.0001, momentum=0.9)
-    epochs = 2
+    epochs = 50
     train_losses = []
     val_losses = []
     train_accuracies = []
@@ -147,7 +147,7 @@ def train(args):
     plt.legend()
     plt.ylabel('Loss')
     plt.xlabel('Epoch')
-    plt.savefig('loss.png')
+    plt.savefig('figs_results/loss.png')
     plt.show()
 
     plt.plot(train_accuracies, label='Train')
@@ -155,7 +155,7 @@ def train(args):
     plt.ylabel('Accuracy (%)')
     plt.xlabel('Epoch')
     plt.legend()
-    plt.savefig('acc.png')
+    plt.savefig('figs_results/acc.png')
     plt.show()
 
     if args.save_path is not None:
@@ -164,10 +164,14 @@ def train(args):
 def load_model(load_path):
     train_dataset, val_dataset, test_dataset, input_size, target_size = get_dataset_multi_hot(choice=1)
 
+    len_sequences = len(train_dataset) + len(val_dataset) + len(test_dataset)
+    random_idxs = np.random.RandomState(seed=42).permutation(len_sequences)
+    test_split = random_idxs[int(len_sequences*0.9):]
+
     # Create model
     #model = LSTMChord(vocab_size, lstm_hidden_size=16)
     #model = LSTMChordEmbedding(vocab_size, embed_size=16, lstm_hidden_size=16)
-    model = LSTM_Multihot(input_size, embed_size=64, lstm_hidden_size=64, target_size=target_size, num_layers=2, dropout_linear=0.4, dropout_lstm=0.4)
+    model = LSTM_Multihot(input_size, embed_size=64, lstm_hidden_size=64, target_size=target_size, num_layers=2)
     #model = LSTM_Multihot_MLP(input_size, embed_size=64, lstm_hidden_size=64, target_size=target_size, num_layers=2, dropout_linear=0.4, dropout_lstm=0.4)
 
     model.load_state_dict(torch.load(load_path))
@@ -180,13 +184,27 @@ def load_model(load_path):
     te_acc = evaluate_model(model, test_dataset)
     print('Test accuracy:\t%.2f' % te_acc)
 
-    with open('new_chord_map.pkl', 'rb') as f:
+    with open('models/new_chord_map.pkl', 'rb') as f:
         new_chord_map = pickle.load(f)
         new_chord_map = dict((v,k) for k,v in new_chord_map.items())
 
+    for i, song in enumerate(test_dataset):
+        inputs = song["input"].float().unsqueeze(0)   # need to add dim for batch_size=1
+        targets = song["target"]
+        lengths = [song["length"]]
+
+        preds = model(inputs, lengths)
+        preds = preds.argmax(dim=2).flatten()
+        targets = targets.flatten()
+        mask = targets != -1
+        
+        correct = (preds == targets[mask]).sum()
+        acc = correct/sum(mask) * 100
+        print('Test song %d\tSong ID: %d\tLength: %d\tAccuracy: %.2f' % (i, test_split[i], lengths[0], acc))
+
     # QUALITATIVE STUDY
     while True:
-        print('Test dataset of length %d. Enter the index of a sample or (q)uit' % len(test_dataset))
+        print('\nTest dataset of length %d. Enter the index of a sample or (q)uit:' % len(test_dataset))
         input_ = input()
         if input_ == 'q':
             break
@@ -202,25 +220,23 @@ def load_model(load_path):
         preds = preds.argmax(dim=2).flatten()
         preds_chord = [new_chord_map[key.item()] for key in preds]
         targets = targets.flatten()
-        targets_chord = [new_chord_map[key.item()] for key in targets]
-
         # Mask the outputs and targets
         mask = targets != -1
-        
+        targets_chord = [new_chord_map[key.item()] for key in targets[mask]]
+
         correct = (preds == targets[mask]).sum()
         acc = correct/sum(mask) * 100
 
-        inputs.squeeze()
-        print('Number chords in the song: ', inputs.shape[0])
-        print('Preds') 
-        print(preds)
-        print('Target') 
-        print(targets[mask])
-        print('Preds') 
+        print('Number chords in the song: ', lengths[0])
+        #print('Preds') 
+        #print(preds)
+        #print('Target') 
+        #print(targets[mask])
+        print('\nPredictions') 
         print(preds_chord)
-        print('Target') 
+        print('\nTargets') 
         print(targets_chord)
-        print('Accuracy in this song: %.2f' % acc.item())
+        print('\nAccuracy in this song: %.2f\n' % acc.item())
 
 
 if __name__ == "__main__":
@@ -235,7 +251,7 @@ if __name__ == "__main__":
     parser.add_argument('--load-path', type=str,
                         # required=True,
                         #default=None,
-                        default='models/trained_models/model_name.pth',
+                        default='models/trained_models/model_1_dataset_1_s42.pth',
                         help='')
 
     args = parser.parse_args()
