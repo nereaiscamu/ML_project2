@@ -129,26 +129,26 @@ for i in old_added_notes:
 
    #create unique vectors for each mapping
 mapping1 = pd.unique(beats['chord_map']) 
-mapping2 = pd.unique(beats['chord_map2'])
+#mapping2 = pd.unique(beats['chord_map2'])
 
 
 beats['mapped_chord'] = beats['Root_pitch'].str.cat(beats['chord_map'])
-beats['mapped_chord2'] = beats['Root_pitch'].str.cat(beats['chord_map2'])
+#beats['mapped_chord2'] = beats['Root_pitch'].str.cat(beats['chord_map2'])
 
 num_chords_mapping1 = pd.unique(beats['mapped_chord'])
-num_chords_mapping2 = pd.unique(beats['mapped_chord2'])
+#num_chords_mapping2 = pd.unique(beats['mapped_chord2'])
 
 # Create chord dictionary only using C root pitch
 beats['C'] = 'C'
 beats['C_chords_ref'] = beats['C'].str.cat(beats['chord_info'])
 beats['C_chord_map'] = beats['C'].str.cat(beats['chord_map'])
-beats['C_chord_map2'] = beats['C'].str.cat(beats['chord_map2'])
+#beats['C_chord_map2'] = beats['C'].str.cat(beats['chord_map2'])
 
-chord_dict = beats[['C_chords_ref', 'C_chord_map', 'C_chord_map2']]
+chord_dict = beats[['C_chords_ref', 'C_chord_map']]
 chord_dict = chord_dict.drop_duplicates(subset=None, 
             keep='first', inplace=False, ignore_index=False)
 
-chord_dict = chord_dict.sort_values(by = ['C_chord_map2'])
+chord_dict = chord_dict.sort_values(by = ['C_chord_map'])
 
 # save the chord dictionary
 chord_dict.to_csv(pathlib.os.path.join(project_path,'Chord_Dictionary.csv'), 
@@ -167,7 +167,7 @@ for i in modes:
     beats.loc[beats['chord_map'].str.contains(i, regex = False) == True, 
               'triad' ] = i #fill the triad variable with the information in the chord mapping
 
-beats.loc[beats['chord_map2'].str.contains('7b5', regex = False) == True, 
+beats.loc[beats['chord_map'].str.contains('7b5', regex = False) == True, 
           'triad' ] = 'half' #Add the half-diminished form, only for 7b5 chords
 
 total_mode = pd.unique(beats['triad'])
@@ -214,8 +214,7 @@ mapping3.to_csv(pathlib.os.path.join(project_path,'3hot.csv'),
 #%% SAVE MODIFIED BEATS TABLE WITH INFORMATION FOR ALL DATASETS
 
 beats = beats[['beatid', 'melid', 'chord', 'Root_pitch', 'chord_info', 
-               'chord_map', 'chord_map2', 
-                'triad', 'added_note']]
+               'chord_map', 'triad', 'added_note']]
 
 beats.to_csv(pathlib.os.path.join(project_path,'Beats_Modified.csv'), 
                   sep=';', header=True, index=False)
