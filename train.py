@@ -4,6 +4,7 @@ import torch.optim as optim
 import torch
 import torch.nn.functional as F
 import numpy as np
+import collections
 import matplotlib.pyplot as plt
 import sys
 sys.path.append('./Data/')
@@ -96,7 +97,19 @@ def train(args):
     #optimizer = optim.Adam(model.parameters(), lr=0.01, weight_decay=0.00001)
     #optimizer = optim.SGD(model.parameters(), lr=0.0005)
     #optimizer = optim.SGD(model.parameters(), lr=0.0001, momentum=0.9)
+<<<<<<< HEAD
+<<<<<<< HEAD
+<<<<<<< HEAD
+    epochs = 100
+=======
+    epochs = 2
+>>>>>>> efd9cb621f4cc1ab02f740a798964a9bed02eff2
+=======
     epochs = 50
+>>>>>>> 971c7497817a5bc7695e6ea6c58c3eb6a7b62db3
+=======
+    epochs = 200
+>>>>>>> max
     train_losses = []
     val_losses = []
     train_accuracies = []
@@ -104,6 +117,9 @@ def train(args):
 
     # TRAIN
     n_batches = np.ceil(len(train_dataset)/batch_size)
+
+    early_stopping = 10
+    losses = collections.deque(maxlen=early_stopping)
     for epoch in range(epochs):
         model.train()
         epoch_loss = 0
@@ -128,6 +144,10 @@ def train(args):
         train_accuracies.append(evaluate_model(model, train_dataset))
         val_accuracies.append(evaluate_model(model, val_dataset))
         print("EPOCH %d\tTrain/val loss: \t%.4f\t%.4f\t\tTrain/val accuracy: \t%.2f\t%.2f" % (epoch, epoch_loss, val_losses[-1], train_accuracies[-1], val_accuracies[-1]))
+
+        losses.append(val_losses[-1])
+        if len(losses) == early_stopping and losses[-1] >= max(losses):
+            break
 
         if epoch == 50 or epoch == 100 or epoch == 150:
             for g in optimizer.param_groups:
@@ -271,8 +291,18 @@ if __name__ == "__main__":
                         help='')
     parser.add_argument('--load-path', type=str,
                         # required=True,
+<<<<<<< HEAD
+<<<<<<< HEAD
+                        default=None,
+                        #default='models/trained_models/model_name.pth',
+=======
                         #default=None,
                         default='models/trained_models/model_1_dataset_1_s42.pth',
+>>>>>>> 971c7497817a5bc7695e6ea6c58c3eb6a7b62db3
+=======
+                        #default=None,
+                        default='models/trained_models/model_1_dataset_1_s42.pth',
+>>>>>>> max
                         help='')
 
     args = parser.parse_args()
