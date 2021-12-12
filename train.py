@@ -95,11 +95,7 @@ def train(args):
     #optimizer = optim.Adam(model.parameters(), lr=0.01, weight_decay=0.00001)
     #optimizer = optim.SGD(model.parameters(), lr=0.0005)
     #optimizer = optim.SGD(model.parameters(), lr=0.0001, momentum=0.9)
-<<<<<<< HEAD
-    epochs = 100
-=======
-    epochs = 2
->>>>>>> efd9cb621f4cc1ab02f740a798964a9bed02eff2
+    epochs = 200
     train_losses = []
     val_losses = []
     train_accuracies = []
@@ -108,7 +104,7 @@ def train(args):
     # TRAIN
     n_batches = np.ceil(len(train_dataset)/batch_size)
 
-    early_stopping = 5
+    early_stopping = 10
     losses = collections.deque(maxlen=early_stopping)
     for epoch in range(epochs):
         model.train()
