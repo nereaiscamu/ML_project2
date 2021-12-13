@@ -277,12 +277,13 @@ if __name__ == "__main__":
     parser.add_argument('--save-path', type=str,
                         # required=True,
                         #default=None,
-                        default='models/trained_models/model_name.pth',
+                        default='models/trained_models/model_trained_nerea.pth',
                         help='')
     parser.add_argument('--load-path', type=str,
                         # required=True,
-                        #default=None,
-                        default='models/trained_models/model_1_dataset_1_s42.pth',
+
+                        default=None,
+                        #default='models/trained_models/model_1_dataset_1_s42.pth',
                         help='')
 
     args = parser.parse_args()

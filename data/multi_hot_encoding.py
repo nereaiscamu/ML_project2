@@ -82,7 +82,10 @@ def preprocess_chords(beats):
     
     
     for i in old_added_notes:
-        beats['chord_map'] = beats['chord_map'].str.replace(i,'7') #map all to 7
+        beats.loc[beats['chord_map'].str.contains('6', regex = False) == True, 
+                  'chord_map' ] = beats['chord_map'].str.replace(i,'')
+        beats.loc[~beats['chord_map'].str.contains('6', regex = False) == True, 
+                  'chord_map' ] = beats['chord_map'].str.replace(i,'7')
         beats['chord_map'] = beats['chord_map'].str.replace('77','7') #to avoid repeated 7
         
     beats['new_chord'] = beats['Root_pitch'].str.cat(beats['chord_map'])
@@ -123,6 +126,9 @@ def preprocess_chords(beats):
     beats.loc[ beats['added_note'] == 'o', "added_note"] = ''
     beats.loc[ beats['added_note'] == '7', "added_note"] = 'm7'
     beats.loc[beats['added_note'] == '', 'added_note'] = 'none'
+    
+    # beats.loc[beats['chord_info'] == 'C', 'triad'] = 'none'
+    # beats.loc[beats['chord_info'] == 'C', 'chord_info'] = 'No Chord'
         
     # 'triad' contains 6 elements. 'added_note' contains 6 elements. Option 2: Root pitch (13) + triad (6) + extra_node (6)
 

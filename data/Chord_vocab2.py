@@ -112,7 +112,10 @@ old_added_notes = ['9#','9b', '9', '11b', '11#', '11', '13b', '13#', '13']
 
 
 for i in old_added_notes:
-    beats['chord_map'] = beats['chord_map'].str.replace(i,'7') #map all to 7
+    beats.loc[beats['chord_map'].str.contains('6', regex = False) == True, 
+              'chord_map' ] = beats['chord_map'].str.replace(i,'')
+    beats.loc[~beats['chord_map'].str.contains('6', regex = False) == True, 
+              'chord_map' ] = beats['chord_map'].str.replace(i,'7')
     beats['chord_map'] = beats['chord_map'].str.replace('77','7') #to avoid repeated 7
 
 
@@ -186,12 +189,15 @@ for i in remove_note_info:
 # 'C' from  No Chord is removed
 beats['added_note'] = beats['added_note'].str.replace('C','')
 
+
 # in the added note, diminished is only kept when it affects the 7th note
 # if only for the triad, already in the previous vector
 beats.loc[ beats['added_note'] == 'o', "added_note"] = ''
 beats.loc[ beats['added_note'] == '7', "added_note"] = 'm7'
 beats.loc[beats['added_note'] == '', 'added_note'] = 'none'
 
+beats.loc[beats['chord_info'] == 'C', 'triad'] = 'none'
+beats.loc[beats['chord_info'] == 'C', 'chord_info'] = 'No Chord'
 
 add_note_count = beats['added_note'].value_counts()
 

@@ -57,21 +57,39 @@ chord_list = pd.unique(result_table['Target_Chords'])
 result_table.loc[result_table['Target_Chords'] == result_table['Pred_Chords'], 'Correct'] = 1
 result_table.loc[result_table['Target_Chords'] != result_table['Pred_Chords'], 'Correct'] = 0
 
-correct_chords = lambda x: sum(x)/len(x)
+correct_chords = lambda x: sum(x)/len(x)*100
 num_chords = lambda x: len(x)
 
-Accuracy_Chord = result_table.groupby(by=["Target_Chords"]).agg({'Correct': [num_chords, correct_chords] })
+Accuracy_Chord = pd.DataFrame(columns=['Target_Chords', 'Sample_Size', 'Chord_Accuracy'])
+Accuracy_Chord = result_table.groupby(
+    by=["Target_Chords"]).agg({'Correct': [num_chords, 
+                                           correct_chords] }).reset_index()
+Accuracy_Chord.columns = ["_".join(x) for x in Accuracy_Chord.columns.ravel()]
+Accuracy_Chord = Accuracy_Chord.rename(columns={'Correct_<lambda_0>': "Sample_Size", 
+                                'Correct_<lambda_1>': "Chord_Accuracy"})
+
+
+#%%
+
+# Accuracy_Chord.columns = Accuracy_Chord.columns.droplevel(0)
 
 
 
+
+prev_chord = ['None']
+for i in range(1, len(result_table['Target_Chords'])):
+    prev_chord.append(result_table['Target_Chords'][i-1])
+    
+result_table['Previous_target'] = prev_chord
 
 #%% Make plots
 # x and y given as array_like objects
 
 pio.renderers.default='browser'
-fig = px.scatter(result_table, x="Song_Length", y='Song_Accuracy')
+fig = px.scatter(result_table, x= ('Correct', '<lambda_0>'), y=('Correct', '<lambda_1>'))
 fig.show()
 
+fig2 = px.scatter(Accuracy_Chord, x="Song_Length", y='Song_Accuracy')
 
     
 
