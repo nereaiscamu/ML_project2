@@ -81,7 +81,7 @@ def train(args):
     batch_size = 20
 
     #train_dataset, val_dataset, test_dataset, input_size, target_size = get_dataset_multi_hot_new_encoding(choice=2)
-    train_dataset, val_dataset, test_dataset, input_size, target_size = get_dataset_multi_hot(choice=1)
+    train_dataset, val_dataset, test_dataset, input_size, target_size = get_dataset_multi_hot(choice=8)
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True) 
 
     # Create model
@@ -127,6 +127,7 @@ def train(args):
 
         model.eval()
         train_losses.append(epoch_loss)
+        
         val_losses.append(get_val_loss(model, val_dataset))
         train_accuracies.append(evaluate_model(model, train_dataset))
         val_accuracies.append(evaluate_model(model, val_dataset))
@@ -170,7 +171,7 @@ def train(args):
         torch.save(model.state_dict(), args.save_path)
 
 def load_model(load_path):
-    train_dataset, val_dataset, test_dataset, input_size, target_size = get_dataset_multi_hot(choice=1)
+    train_dataset, val_dataset, test_dataset, input_size, target_size = get_dataset_multi_hot(choice=7)
 
     len_sequences = len(train_dataset) + len(val_dataset) + len(test_dataset)
     random_idxs = np.random.RandomState(seed=42).permutation(len_sequences)
@@ -258,8 +259,8 @@ if __name__ == "__main__":
                         help='')
     parser.add_argument('--load-path', type=str,
                         # required=True,
-                        #default=None,
-                        default='models/trained_models/model_1_dataset_1_s42.pth',
+                        default=None,
+                        #default='models/trained_models/model_1_dataset_1_s42.pth',
                         help='')
 
     args = parser.parse_args()
