@@ -4,7 +4,7 @@ import numpy as np
 from dataset import OneHot_VLDataset, MultiHot_VLDataset, MultiHot_MelodyEncoded_VLDataset, MultiHot_MelodyBassEncoded_VLDataset, MultiHot_MelodyDurationEncoded_VLDataset, MultiHot_MelodyWeighted_VLDataset
 import pdb
 import pickle
-
+import os
 import sys
 sys.path.append('../')
 from data.combine_melody_beats import encode_pitch
@@ -373,7 +373,7 @@ def get_dataset5(melody, beats):
 
     return beats_mel, vocab_sizes, target_size
 
-def get_dataset_multi_hot(choice=1, val_split=0.1, test_split=0.1):
+def get_dataset_multi_hot(choice=1, val_split=0.1, test_split=0.1, seed=42):
     '''
     Generate train and test dataset. Based on dataset choice
     choice:
@@ -386,7 +386,7 @@ def get_dataset_multi_hot(choice=1, val_split=0.1, test_split=0.1):
         8: Multi-hot chord encoding + weighted melody encoding
     '''
 
-    path = "./Data/wjazzd.db" # REPLACE THIS WITH PATH TO FILE
+    path = "./data/wjazzd.db" # REPLACE THIS WITH PATH TO FILE
     engine = create_engine(f"sqlite:///{path}")
     beats_raw = pd.read_sql("beats", engine)
     melody_raw = pd.read_sql("melody", engine)
@@ -450,14 +450,14 @@ def get_dataset_multi_hot(choice=1, val_split=0.1, test_split=0.1):
 
             target_sequence.append(seq_one_hot)
                 
-    # convert to np array
+        # convert to np array
     sequences = np.array(sequences, dtype=object)
     target_sequence = np.array(target_sequence, dtype=object)
     melodies = np.array(melodies, dtype=object)
     bass_pitch = np.array(bass_pitch, dtype=object)
 
     # Split Train/Val/Test
-    random_idxs = np.random.RandomState(seed=42).permutation(len(sequences))    # this randomState has a localized effect, so the permutation will be the same always (and can use test set in load_model)
+    random_idxs = np.random.RandomState(seed=seed).permutation(len(sequences))    # this randomState has a localized effect, so the permutation will be the same always (and can use test set in load_model)
     split_1 = int(len(sequences)*(1-test_split-val_split))
     split_2 = int(len(sequences)*(1-test_split))
 
@@ -480,6 +480,12 @@ def get_dataset_multi_hot(choice=1, val_split=0.1, test_split=0.1):
         val_dataset = MultiHot_MelodyEncoded_VLDataset(val_seq, val_mel, val_target_seq, vocab_sizes)
         test_dataset = MultiHot_MelodyEncoded_VLDataset(test_seq, test_mel, test_target_seq, vocab_sizes)
         input_size = sum(vocab_sizes) + 12
+
+        # save datasets
+        data = (train_dataset, val_dataset, test_dataset, input_size, target_size)
+        with open('data/datasets/dataset4.pickle', 'wb') as f:
+            pickle.dump(data, f)
+
         return train_dataset, val_dataset, test_dataset, input_size, target_size
 
     if choice == 5:
@@ -530,6 +536,13 @@ def get_dataset_multi_hot(choice=1, val_split=0.1, test_split=0.1):
     test_dataset = MultiHot_VLDataset(test_seq, test_target_seq, vocab_sizes)
 
     input_size = sum(vocab_sizes)
+
+
+    # save datasets
+    data = (train_dataset, val_dataset, test_dataset, input_size, target_size)
+    with open('data/datasets/dataset1.pickle', 'wb') as f:
+        pickle.dump(data, f)
+
     return train_dataset, val_dataset, test_dataset, input_size, target_size
 
 
@@ -546,7 +559,7 @@ def get_dataset_multi_hot_without_split(choice=1, test_split=0.1):
         8: Multi-hot chord encoding + weighted melody encoding
     '''
 
-    path = "./Data/wjazzd.db" # REPLACE THIS WITH PATH TO FILE
+    path = "./data/wjazzd.db" # REPLACE THIS WITH PATH TO FILE
     engine = create_engine(f"sqlite:///{path}")
     beats_raw = pd.read_sql("beats", engine)
     melody_raw = pd.read_sql("melody", engine)
