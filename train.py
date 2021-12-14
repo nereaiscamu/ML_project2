@@ -115,6 +115,8 @@ def train(args):
     #optimizer = optim.SGD(model.parameters(), lr=0.0001, momentum=0.9)
 
     epochs = args.max_epochs
+    best_cost = 1000
+    early_stopping = args.early_stopping
     train_losses = []
     val_losses = []
     train_accuracies = []
@@ -122,8 +124,6 @@ def train(args):
 
     # TRAIN
     n_batches = np.ceil(len(train_dataset)/batch_size)
-
-    losses = collections.deque(maxlen=args.early_stopping)
     for epoch in range(epochs):
         model.train()
         epoch_loss = 0
@@ -150,9 +150,16 @@ def train(args):
         val_accuracies.append(evaluate_model(model, val_dataset, device))
         print("EPOCH %d\tTrain/val loss: \t%.4f\t%.4f\t\tTrain/val accuracy: \t%.2f\t%.2f" % (epoch, epoch_loss, val_losses[-1], train_accuracies[-1], val_accuracies[-1]))
 
-        losses.append(val_losses[-1])
-        if len(losses) == args.early_stopping and losses[-1] >= max(np.array(losses)[:-args.patience]):
-            break
+        # Early stopping based on the validation set:
+        # Check that improvement has been made in the last X epochs
+        if val_losses[-1] < best_cost:
+            best_cost = val_losses[-1]
+            last_improvement = 0
+        else:
+            last_improvement +=1
+            if last_improvement > early_stopping:
+                print("\nNo improvement found during the last %d epochs, stopping optimization.\n" % early_stopping)
+                break
 
         if epoch == 50 or epoch == 100 or epoch == 150:
             for g in optimizer.param_groups:
@@ -274,10 +281,6 @@ def load_model(load_path):
         acc = correct/sum(mask) * 100
 
         print('Number chords in the song: ', lengths[0])
-        #print('Preds') 
-        #print(preds)
-        #print('Target') 
-        #print(targets[mask])
         print('\nPredictions') 
         print(preds_chord)
         print('\nTargets') 
@@ -306,9 +309,6 @@ if __name__ == "__main__":
     parser.add_argument('--early-stopping', type=int,
                         default=15,
                         help='')
-    parser.add_argument('--patience', type=int,
-                        default=10,
-                        help='')
     parser.add_argument('--seed', type=int,
                         default=42,
                         help='')
@@ -322,7 +322,6 @@ if __name__ == "__main__":
                         help='')
     parser.add_argument('--load-path', type=str,
                         # required=True,
-
                         default=None,
                         #default='models/trained_models/model_1_dataset_1_s42.pth',
                         help='')
