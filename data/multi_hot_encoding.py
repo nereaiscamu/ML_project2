@@ -38,6 +38,10 @@ chords_count_discard = chords_count[(chords_count<10)]
 ### Here is the part to build the chord vocabulary
 
 def preprocess_chords(beats):
+    # Remove empty rows, if melody encoded, empty rows corresponds to -1
+    beats['chord'].replace('', np.nan, inplace=True)
+    beats['chord'].replace(-1, np.nan, inplace=True)
+    beats = beats.dropna()
     beats = beats.assign(root_pitch = beats['chord'].str.slice(stop=1))
 
     # the first letter is always the root note, 
@@ -68,8 +72,9 @@ def preprocess_chords(beats):
 
     # *** Now only 12 pitches + No Chord ***
 
-    beats = beats[['beatid', 'melid', 'chord', 'Root_pitch', 'chord_info', 'bar', 'beat', 'bass_pitch']] #remove useless columns
-    
+    #beats = beats[['beatid', 'melid', 'chord', 'Root_pitch', 'chord_info', 'bar', 'beat', 'bass_pitch']] #remove useless columns
+    beats = beats.drop(['mod', 'mod2', 'complete_pitch', 'root_pitch'], axis=1)
+
     # NOW WE ADD A SECOND VECTOR WITH ALL THE INFO ABOUT THE CHORD BUT THE ROOT PITCH
 
     ''' Remove or change useless information'''
@@ -80,7 +85,9 @@ def preprocess_chords(beats):
     
     old_added_notes = ['9#','9b', '9', '11b', '11#', '11', '13b', '13#', '13']
     
-    
+    # When encoding the melody, type gets changed, need to change type to prevent error for ~ operator in beats.loc[~...
+    beats['chord_map'] = beats['chord_map'].astype(str)
+
     for i in old_added_notes:
         beats.loc[beats['chord_map'].str.contains('6', regex = False) == True, 
                   'chord_map' ] = beats['chord_map'].str.replace(i,'')
@@ -250,6 +257,8 @@ def get_dataset_only_chord_2(beats):
 
     return beats, vocab_sizes, target_size
 
+
+def get_dataset3(melody, beats):
     """
     Dataset 3: Multi-hot. Combination of 3 One-Hot vectors for chord encoding + Melody encoding
         (1): Root pitch and '#'. Vocab size = 13
@@ -297,6 +306,7 @@ def get_dataset_only_chord_2(beats):
 
     return mel_beats, vocab_sizes, target_size
 
+
 def get_dataset4(melody, beats):
     """
     Dataset 4: Multi-hot. Combination of 3 One-Hot vectors for chord encoding + Melody encoding
@@ -330,6 +340,7 @@ def get_dataset4(melody, beats):
 
     return mel_beats, vocab_sizes, target_size
 
+
 def get_dataset5(melody, beats):
     """
     Dataset 4: Multi-hot. Combination of 3 One-Hot vectors for chord encoding + Melody encoding
@@ -342,8 +353,8 @@ def get_dataset5(melody, beats):
     
     beats = beats[['beatid', 'melid', 'bar', 'beat', 'chord', 'bass_pitch']]
 
-    beats_encoded = preprocess_chords(beats)
-    beats_mel = encode_pitch(melody, beats_encoded, pitch_sequence=True)
+    beats_mel = encode_pitch(melody, beats, pitch_sequence=True)
+    beats_mel = preprocess_chords(beats_mel)
     beats_mel = encode_chords_1(beats_mel)
 
     unique_chords = pd.unique(beats_mel['new_chord'])
@@ -522,6 +533,7 @@ def get_dataset_multi_hot(choice=1, val_split=0.1, test_split=0.1):
     input_size = sum(vocab_sizes)
     return train_dataset, val_dataset, test_dataset, input_size, target_size
 
+
 def get_dataset_multi_hot_without_split(choice=1, test_split=0.1):
     '''
     Generate train and test dataset. Based on dataset choice
@@ -605,83 +617,31 @@ def get_dataset_multi_hot_without_split(choice=1, test_split=0.1):
     melodies = np.array(melodies, dtype=object)
     bass_pitch = np.array(bass_pitch, dtype=object)
 
-    # Split Train/Val/Test
-    # random_idxs = np.random.RandomState(seed=42).permutation(len(sequences))    # this randomState has a localized effect, so the permutation will be the same always (and can use test set in load_model)
-    # split_1 = int(len(sequences)*(1-test_split-val_split))
-    split = int(len(sequences)*(1-test_split))
-
-    # train_idxs = random_idxs[:split]
-    # val_idxs = random_idxs[split_1:split_2]
-    # test_idxs = random_idxs[split:]
-
-    # train_seq = sequences[train_idxs]
-    # val_seq = sequences[val_idxs]
-    # test_seq = sequences[test_idxs]
-    # train_target_seq = target_sequence[train_idxs]
-    # val_target_seq = target_sequence[val_idxs]
-    # test_target_seq = target_sequence[test_idxs]
-
     if choice == 4:
-        # train_mel = melodies[train_idxs]
-        # val_mel = melodies[val_idxs]
-        # test_mel = melodies[test_idxs]
         dataset = MultiHot_MelodyEncoded_VLDataset(sequences, melodies, target_sequence, vocab_sizes)
-        # train_dataset = MultiHot_MelodyEncoded_VLDataset(train_seq, train_mel, train_target_seq, vocab_sizes)
-        # val_dataset = MultiHot_MelodyEncoded_VLDataset(val_seq, val_mel, val_target_seq, vocab_sizes)
-        # test_dataset = MultiHot_MelodyEncoded_VLDataset(test_seq, test_mel, test_target_seq, vocab_sizes)
         input_size = sum(vocab_sizes) + 12
         return dataset, input_size, target_size
 
     if choice == 5:
-        # train_bass = bass_pitch[train_idxs]
-        # val_bass = bass_pitch[val_idxs]
-        # test_bass = bass_pitch[test_idxs]
         dataset = MultiHot_MelodyEncoded_VLDataset(sequences, bass_pitch, target_sequence, vocab_sizes)
-        # train_dataset = MultiHot_MelodyEncoded_VLDataset(train_seq, train_bass, train_target_seq, vocab_sizes)
-        # val_dataset = MultiHot_MelodyEncoded_VLDataset(val_seq, val_bass, val_target_seq, vocab_sizes)
-        # test_dataset = MultiHot_MelodyEncoded_VLDataset(test_seq, test_bass, test_target_seq, vocab_sizes)
         input_size = sum(vocab_sizes) + 12
         return dataset, input_size, target_size
 
     if choice == 6:
-        # train_mel = melodies[train_idxs]
-        # val_mel = melodies[val_idxs]
-        # test_mel = melodies[test_idxs]
-        # train_bass = bass_pitch[train_idxs]
-        # val_bass = bass_pitch[val_idxs]
-        # test_bass = bass_pitch[test_idxs]
         dataset = MultiHot_MelodyBassEncoded_VLDataset(sequences, melodies, bass_pitch, target_sequence, vocab_sizes)
-        # train_dataset = MultiHot_MelodyBassEncoded_VLDataset(train_seq, train_mel, train_bass, train_target_seq, vocab_sizes)
-        # val_dataset = MultiHot_MelodyBassEncoded_VLDataset(val_seq, val_mel, val_bass, val_target_seq, vocab_sizes)
-        # test_dataset = MultiHot_MelodyBassEncoded_VLDataset(test_seq, test_mel, test_bass, test_target_seq, vocab_sizes)
         input_size = sum(vocab_sizes) + 12 + 12
         return dataset, input_size, target_size
 
     if choice == 7:
-        # train_mel = melodies[train_idxs]
-        # val_mel = melodies[val_idxs]
-        # test_mel = melodies[test_idxs]     
         dataset = MultiHot_MelodyDurationEncoded_VLDataset(sequences, melodies, target_sequence, vocab_sizes)
-        # train_dataset = MultiHot_MelodyDurationEncoded_VLDataset(train_seq, train_mel, train_target_seq, vocab_sizes)
-        # val_dataset = MultiHot_MelodyDurationEncoded_VLDataset(val_seq, val_mel, val_target_seq, vocab_sizes)
-        # test_dataset = MultiHot_MelodyDurationEncoded_VLDataset(test_seq, test_mel, test_target_seq, vocab_sizes)
         input_size = sum(vocab_sizes) + 12
         return dataset, input_size, target_size
 
-    if choice == 8:
-        # train_mel = melodies[train_idxs]
-        # val_mel = melodies[val_idxs]
-        # test_mel = melodies[test_idxs]       
+    if choice == 8:    
         dataset = MultiHot_MelodyWeighted_VLDataset(sequences, melodies, target_sequence, vocab_sizes)
-        # train_dataset = MultiHot_MelodyWeighted_VLDataset(train_seq, train_mel, train_target_seq, vocab_sizes)
-        # val_dataset = MultiHot_MelodyWeighted_VLDataset(val_seq, val_mel, val_target_seq, vocab_sizes)
-        # test_dataset = MultiHot_MelodyWeighted_VLDataset(test_seq, test_mel, test_target_seq, vocab_sizes)
         input_size = sum(vocab_sizes) + 12
         return dataset, input_size, target_size
 
-    # train_dataset = MultiHot_VLDataset(train_seq, train_target_seq, vocab_sizes)
-    # val_dataset = MultiHot_VLDataset(val_seq, val_target_seq, vocab_sizes)
-    # test_dataset = MultiHot_VLDataset(test_seq, test_target_seq, vocab_sizes)
     dataset = MultiHot_VLDataset(sequences, target_sequence, vocab_sizes)
 
     input_size = sum(vocab_sizes)
