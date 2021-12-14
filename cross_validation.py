@@ -15,6 +15,7 @@ from models.lstm_chord_models import LSTMChord, LSTMChordEmbedding, LSTMChordEmb
 from models.lstm_melody_models import LSTM_Multihot, LSTM_Multihot_MLP
 from argparse import ArgumentParser
 from sklearn.model_selection import KFold
+import statistics
 import pdb
 
 # Andrew's
@@ -114,7 +115,7 @@ def train(args):
     # Configurations
     batch_size = 20
     k_folds = 4
-    epochs = 100
+    epochs = 200
     early_stopping = 15
     torch.manual_seed(42)
 
@@ -151,7 +152,7 @@ def train(args):
         val_losses_fold = []
         train_accuracies_fold = []
         val_accuracies_fold = []
-        losses = collections.deque(maxlen=early_stopping)
+        best_cost = 1000
 
         # Sample elements randomly from a given list of ids, no replacement.
         #train_subsampler = torch.utils.data.SubsetRandomSampler(train_ids)
@@ -202,9 +203,20 @@ def train(args):
             val_accuracies_fold.append(evaluate_model(model, loader=val_loader))
             print("EPOCH %.2d\tTrain/val loss: \t%.4f\t%.4f\t\tTrain/val accuracy: \t%.2f\t%.2f" % (epoch, epoch_loss, val_losses_fold[-1], train_accuracies_fold[-1], val_accuracies_fold[-1]))
 
-            losses.append(val_losses_fold[-1])
-            if len(losses) == early_stopping and losses[-1] >= max(losses):
+            # Early stopping based on the validation set:
+            # Check that improvement has been made in the last X epochs
+            if val_losses_fold[-1] < best_cost:
+                best_cost = val_losses_fold[-1]
+                last_improvement = 0
+            else:
+                last_improvement +=1
+            if last_improvement > early_stopping:
+                print("\nNo improvement found during the last %d epochs, stopping optimization.\n" % early_stopping)
                 break
+
+            # losses.append(val_losses_fold[-1])
+            # if len(losses) == early_stopping and losses[-1] >= max(losses):
+            #     break
 
             if epoch == 50 or epoch == 100 or epoch == 150:
                 for g in optimizer.param_groups:
@@ -231,7 +243,11 @@ def train(args):
 
     print('\n*** Training done for all %d folds! ***\n' % k_folds)
 
-    print("Average Train/val loss: \t%.4f\t%.4f\t\tAverage Train/val accuracy: \t%.2f\t%.2f" % (np.mean(train_losses), np.mean(val_losses), np.mean(train_accuracies), np.mean(val_accuracies)))
+    train_losses_mean = np.mean([sublist[-1] for sublist in train_losses]) 
+    val_losses_mean = np.mean([sublist[-1] for sublist in val_losses]) 
+    train_accuracies_mean = np.mean([sublist[-1] for sublist in train_accuracies]) 
+    val_accuracies_mean = np.mean([sublist[-1] for sublist in val_accuracies]) 
+    print("Average Train/val loss: \t%.4f\t%.4f\t\tAverage Train/val accuracy: \t%.2f\t%.2f" % (train_losses_mean, val_losses_mean, train_accuracies_mean, val_accuracies_mean))
     print("Average test accuracy:  \t%.2f\n" % np.mean(test_accuracies))
 
     plot_losses(train_losses, val_losses)
