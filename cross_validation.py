@@ -78,11 +78,25 @@ def evaluate_model(model, loader=None, dataset=None):
     acc = 100 * correct.item()/total    
     return acc
 
-def split_dataset(dataset):
+
+def split_dataset(dataset, val_split=0.1, test_split=0.1):
     """
     Splits the dataset in 80% train, 10% validation, 10% test
     """
+    # Split Train/Val/Test
     len_dataset = len(dataset)
+    # random_idxs = np.random.RandomState(seed=42).permutation(len_dataset)    # this randomState has a localized effect, so the permutation will be the same always (and can use test set in load_model)
+    # split_1 = int(len_dataset*(1-test_split-val_split))
+    # split_2 = int(len_dataset*(1-test_split))
+
+    # train_idxs = random_idxs[:split_1]
+    # val_idxs = random_idxs[split_1:split_2]
+    # test_idxs = random_idxs[split_2:]
+
+    # train_set = dataset[train_idxs]
+    # val_set = dataset[val_idxs]
+    # test_set = dataset[test_idxs]
+
     len_tr = int(0.8*len_dataset)
     len_rem = len_dataset - len_tr
     train_set, rem_set = torch.utils.data.random_split(dataset, [len_tr, len_rem])
@@ -97,21 +111,24 @@ def split_dataset(dataset):
 def train(args):
     # Get dataset
     # 354 training samples
+    # Configurations
     batch_size = 20
+    k_folds = 3
+    epochs = 100
+    early_stopping = 15
+    torch.manual_seed(42)
 
     #train_dataset, val_dataset, test_dataset, input_size, target_size = get_dataset_multi_hot_new_encoding(choice=2)
     #train_dataset, val_dataset, test_dataset, input_size, target_size = get_dataset_multi_hot(choice=8)
     dataset, input_size, target_size = get_dataset_multi_hot_without_split(choice=8)
     train_set, val_set, test_set = split_dataset(dataset)
+    print('Dataset length:   %d' % len(dataset))
+    print('Train set length: %d' % len(train_set))
+    print('Val set length:   %d' % len(val_set))
+    print('Test set length:  %d' % len(test_set))
     
     # Create set with the train_set and val_set for the cross validation
     cross_set = ConcatDataset([train_set, val_set])
-
-    # Configurations
-    k_folds = 5
-    epochs = 5
-    early_stopping = 15
-    torch.manual_seed(42)
 
     #kFold
     kfold = KFold(n_splits=k_folds, shuffle=True)
@@ -123,7 +140,6 @@ def train(args):
 
     # TRAIN
     n_batches = np.ceil(len(cross_set)/batch_size)
-
 
     # K-fold Cross Validation model evaluation
     for fold, (train_ids, val_ids) in enumerate(kfold.split(cross_set)):
@@ -140,9 +156,9 @@ def train(args):
         #val_subsampler = torch.utils.data.SubsetRandomSampler(val_ids)
 
         #train_loader = DataLoader(dataset, batch_size=batch_size, sampler=train_subsampler) 
-        train_loader = DataLoader(dataset, batch_size=batch_size, sampler=train_ids) 
+        train_loader = DataLoader(cross_set, batch_size=batch_size, sampler=train_ids) 
         #val_loader = DataLoader(dataset, batch_size=batch_size, sampler=val_subsampler)
-        val_loader = DataLoader(dataset, batch_size=batch_size, sampler=val_ids)
+        val_loader = DataLoader(cross_set, batch_size=batch_size, sampler=val_ids)
 
         # Create model
         #model = LSTMChord(vocab_size, lstm_hidden_size=16)
@@ -161,7 +177,7 @@ def train(args):
         for epoch in range(epochs):
             model.train()
             epoch_loss = 0
-            for batch_idx, batch in enumerate(train_loader, 0):
+            for _, batch in enumerate(train_loader, 0):
                 inputs = batch["input"].float()
                 lengths = batch["length"]
                 targets = batch["target"][:, :max(lengths)] 
@@ -197,8 +213,8 @@ def train(args):
         train_accuracies.append(train_accuracies_fold)
         val_accuracies.append(val_accuracies_fold)     
         
-        #plot_losses(train_losses_fold, val_losses_fold)
-        #plot_accuracies(train_accuracies_fold, val_accuracies_fold) 
+        plot_loss(train_losses_fold, val_losses_fold, name=(f'loss_{fold+1}.png'))
+        plot_accuracy(train_accuracies_fold, val_accuracies_fold, name=(f'acc_{fold+1}.png')) 
 
     print('\n*** Training done for all %d folds! ***\n' % k_folds)
 
@@ -220,28 +236,54 @@ def train(args):
         torch.save(model.state_dict(), args.save_path)
 
 
-def plot_losses(train_losses, val_losses):
+
+def plot_loss(train_losses, val_losses, name='loss.png'):
     """
     Plots the losses and saves the plot to 'figs_results/loss.png'
     """
-    plt.plot(train_losses, label='Train')
+    plt.plot(train_losses, label='Train_1')
     plt.plot(val_losses, label='Validation')
     plt.legend()
     plt.ylabel('Loss')
     plt.xlabel('Epoch')
-    plt.savefig('figs_results/loss.png')
+    plt.savefig('figs_results/' + name)
     plt.show()
 
-def plot_accuracies(train_accuracies, val_accuracies):
+def plot_accuracy(train_accuracies, val_accuracies, name='acc.png'):
     """
     Plots the accuracies and saves the plot to 'figs_results/acc.png'
     """
     plt.plot(train_accuracies, label='Train')
-    plt.plot(val_accuracies, label='Validation')
+    plt.plot(val_accuracies, label='Validaton')
     plt.ylabel('Accuracy (%)')
     plt.xlabel('Epoch')
     plt.legend()
-    plt.savefig('figs_results/acc.png')
+    plt.savefig('figs_results/' + name)
+    plt.show()
+
+
+def plot_losses(train_losses, val_losses, name='loss.png'):
+    """
+    Plots the losses and saves the plot to 'figs_results/loss.png'
+    """
+    plt.plot(train_losses, label=['Train_1', 'Train_2', 'Train_3', 'Train_4', 'Train_5'])
+    plt.plot(val_losses, label=['Val_1', 'Val_2', 'Val_3', 'Val_4', 'Val_5'])
+    plt.legend()
+    plt.ylabel('Loss')
+    plt.xlabel('Epoch')
+    plt.savefig('figs_results/' + name)
+    plt.show()
+
+def plot_accuracies(train_accuracies, val_accuracies, name='acc.png'):
+    """
+    Plots the accuracies and saves the plot to 'figs_results/acc.png'
+    """
+    plt.plot(train_accuracies, label=['Train_1', 'Train_2', 'Train_3', 'Train_4', 'Train_5'])
+    plt.plot(val_accuracies, label=['Val_1', 'Val_2', 'Val_3', 'Val_4', 'Val_5'])
+    plt.ylabel('Accuracy (%)')
+    plt.xlabel('Epoch')
+    plt.legend()
+    plt.savefig('figs_results/' + name)
     plt.show()
 
 if __name__ == "__main__":
