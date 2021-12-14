@@ -173,7 +173,7 @@ def train(args):
         torch.save(model.state_dict(), args.save_path)
 
 def load_model(load_path):
-    train_dataset, val_dataset, test_dataset, input_size, target_size = get_dataset_multi_hot(choice=7)
+    train_dataset, val_dataset, test_dataset, input_size, target_size = get_dataset_multi_hot(choice=1)
 
     len_sequences = len(train_dataset) + len(val_dataset) + len(test_dataset)
     random_idxs = np.random.RandomState(seed=42).permutation(len_sequences)
