@@ -99,6 +99,8 @@ def train(args):
     #optimizer = optim.SGD(model.parameters(), lr=0.0001, momentum=0.9)
 
     epochs = 100
+    best_cost = 1000
+    early_stopping = 15
     train_losses = []
     val_losses = []
     train_accuracies = []
@@ -107,8 +109,6 @@ def train(args):
     # TRAIN
     n_batches = np.ceil(len(train_dataset)/batch_size)
 
-    early_stopping = 10
-    losses = collections.deque(maxlen=early_stopping)
     for epoch in range(epochs):
         model.train()
         epoch_loss = 0
@@ -135,8 +135,15 @@ def train(args):
         val_accuracies.append(evaluate_model(model, val_dataset))
         print("EPOCH %d\tTrain/val loss: \t%.4f\t%.4f\t\tTrain/val accuracy: \t%.2f\t%.2f" % (epoch, epoch_loss, val_losses[-1], train_accuracies[-1], val_accuracies[-1]))
 
-        losses.append(val_losses[-1])
-        if len(losses) == early_stopping and losses[-1] >= max(losses):
+        # Early stopping based on the validation set:
+        # Check that improvement has been made in the last X epochs
+        if val_losses[-1] < best_cost:
+            best_cost = val_losses[-1]
+            last_improvement = 0
+        else:
+            last_improvement +=1
+        if last_improvement > early_stopping:
+            print("\nNo improvement found during the last %d epochs, stopping optimization.\n" % early_stopping)
             break
 
         if epoch == 50 or epoch == 100 or epoch == 150:
