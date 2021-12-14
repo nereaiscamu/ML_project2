@@ -203,7 +203,7 @@ def get_dataset_only_chord_1(beats):
     Dataset 2: Multi-hot. Combination of 3 One-Hot vectors:
         (1): Root pitch and '#'. Vocab size = 13
         (2): triad. Vocab size = 6
-        (3): Extra note. Vocab size = 4
+        (3): Extra note. Vocab size = 5
     '''
     beats['chord'].replace('', np.nan, inplace=True)
     beats = beats[['beatid', 'melid', 'chord', 'bar', 'beat', 'bass_pitch']].dropna()

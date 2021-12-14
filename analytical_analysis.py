@@ -12,21 +12,17 @@ import numpy as np
 import plotly.express as px
 import plotly.io as pio
 
+model_path = 'models/trained_models/model_trained_nerea.pth'
 
-if __name__ == "__main__":
-    np.random.seed(42)
+parser = ArgumentParser(description='Train a model')
+parser.add_argument('--load-path', type=str,
+                    default= model_path,
+                    help='')
 
-    parser = ArgumentParser(description='Train a model')
-    parser.add_argument('--load-path', type=str,
-                        # required=True,
-                        #default=None,
-                        default='models/trained_models/model_1_dataset_1_s42.pth',
-                        help='')
+args = parser.parse_args()
+load_model(args.load_path)
 
-    args = parser.parse_args()
-
-    if args.load_path is not None:
-        s, l, a, p, t = load_model(args.load_path)
+#%%
         
 import pandas as pd
 
@@ -72,9 +68,6 @@ Accuracy_Chord = Accuracy_Chord.rename(columns={'Correct_<lambda_0>': "Sample_Si
 #%%
 
 # Accuracy_Chord.columns = Accuracy_Chord.columns.droplevel(0)
-
-
-
 
 prev_chord = ['None']
 for i in range(1, len(result_table['Target_Chords'])):
