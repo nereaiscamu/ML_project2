@@ -267,9 +267,8 @@ def get_dataset3(melody, beats):
         (4): Melody pitch. One entry for each note played
     """
     beats = beats[['beatid', 'melid', 'bar', 'beat', 'chord', 'bass_pitch']]
-
-    beats_encoded = preprocess_chords(beats)
-    mel_beats = encode_pitch(melody, beats_encoded, pitch_sequence=False)
+    mel_beats = encode_pitch(melody, beats, pitch_sequence=False)
+    mel_beats = preprocess_chords(mel_beats)
 
     unique_chords = pd.unique(mel_beats['new_chord'])
     unique_pitch = pd.unique(mel_beats['Root_pitch'])

@@ -113,14 +113,14 @@ def train(args):
     # 354 training samples
     # Configurations
     batch_size = 20
-    k_folds = 3
+    k_folds = 4
     epochs = 100
     early_stopping = 15
     torch.manual_seed(42)
 
     #train_dataset, val_dataset, test_dataset, input_size, target_size = get_dataset_multi_hot_new_encoding(choice=2)
     #train_dataset, val_dataset, test_dataset, input_size, target_size = get_dataset_multi_hot(choice=8)
-    dataset, input_size, target_size = get_dataset_multi_hot_without_split(choice=8)
+    dataset, input_size, target_size = get_dataset_multi_hot_without_split(choice=7)
     train_set, val_set, test_set = split_dataset(dataset)
     print('Dataset length:   %d' % len(dataset))
     print('Train set length: %d' % len(train_set))
@@ -137,6 +137,8 @@ def train(args):
     val_losses = []
     train_accuracies = []
     val_accuracies = []
+    test_accuracies = []
+    models = []
 
     # TRAIN
     n_batches = np.ceil(len(cross_set)/batch_size)
@@ -208,26 +210,29 @@ def train(args):
                 for g in optimizer.param_groups:
                     g['lr'] /= 2
         
+        models.append(model)
+        
+        # EVALUATE
+        tr_acc = evaluate_model(model, dataset=train_set)
+        print('\nTrain accuracy:\t%.2f' % tr_acc)
+        val_acc = evaluate_model(model, dataset=val_set)
+        print('Val accuracy:\t%.2f' % val_acc)
+        te_acc = evaluate_model(model, dataset=test_set)
+        print('Test accuracy:\t%.2f\n' % te_acc)
+
         train_losses.append(train_losses_fold)
         val_losses.append(val_losses_fold)
-        train_accuracies.append(train_accuracies_fold)
+        train_accuracies.append(train_accuracies_fold)     
         val_accuracies.append(val_accuracies_fold)     
-        
+        test_accuracies.append(te_acc)    
+
         plot_loss(train_losses_fold, val_losses_fold, name=(f'loss_{fold+1}.png'))
         plot_accuracy(train_accuracies_fold, val_accuracies_fold, name=(f'acc_{fold+1}.png')) 
 
     print('\n*** Training done for all %d folds! ***\n' % k_folds)
 
     print("Average Train/val loss: \t%.4f\t%.4f\t\tAverage Train/val accuracy: \t%.2f\t%.2f" % (np.mean(train_losses), np.mean(val_losses), np.mean(train_accuracies), np.mean(val_accuracies)))
-
-
-    # EVALUATE
-    tr_acc = evaluate_model(model, dataset=train_set)
-    print('Train accuracy:\t%.2f' % tr_acc)
-    val_acc = evaluate_model(model, dataset=val_set)
-    print('Val accuracy:\t%.2f' % val_acc)
-    te_acc = evaluate_model(model, dataset=test_set)
-    print('Test accuracy:\t%.2f' % te_acc)
+    print("Average test accuracy:  \t%.2f\n" % np.mean(test_accuracies))
 
     plot_losses(train_losses, val_losses)
     plot_accuracies(train_accuracies, val_accuracies)
@@ -241,7 +246,7 @@ def plot_loss(train_losses, val_losses, name='loss.png'):
     """
     Plots the losses and saves the plot to 'figs_results/loss.png'
     """
-    plt.plot(train_losses, label='Train_1')
+    plt.plot(train_losses, label='Train')
     plt.plot(val_losses, label='Validation')
     plt.legend()
     plt.ylabel('Loss')
@@ -266,8 +271,12 @@ def plot_losses(train_losses, val_losses, name='loss.png'):
     """
     Plots the losses and saves the plot to 'figs_results/loss.png'
     """
-    plt.plot(train_losses, label=['Train_1', 'Train_2', 'Train_3', 'Train_4', 'Train_5'])
-    plt.plot(val_losses, label=['Val_1', 'Val_2', 'Val_3', 'Val_4', 'Val_5'])
+    for i in range(len(train_losses)):
+        plt.plot(train_losses[i], label='Train_%d' % i)
+
+    for i in range(len(val_losses)):
+        plt.plot(val_losses[i], label='Val_%d' % i)
+
     plt.legend()
     plt.ylabel('Loss')
     plt.xlabel('Epoch')
@@ -278,8 +287,12 @@ def plot_accuracies(train_accuracies, val_accuracies, name='acc.png'):
     """
     Plots the accuracies and saves the plot to 'figs_results/acc.png'
     """
-    plt.plot(train_accuracies, label=['Train_1', 'Train_2', 'Train_3', 'Train_4', 'Train_5'])
-    plt.plot(val_accuracies, label=['Val_1', 'Val_2', 'Val_3', 'Val_4', 'Val_5'])
+    for i in range(len(train_accuracies)):
+        plt.plot(train_accuracies[i], label='Train_%d' % i)
+
+    for i in range(len(val_accuracies)):
+        plt.plot(val_accuracies[i], label='Val_%d' % i)
+
     plt.ylabel('Accuracy (%)')
     plt.xlabel('Epoch')
     plt.legend()
