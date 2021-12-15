@@ -102,14 +102,14 @@ def train(args):
                             lstm_hidden_size=args.hidden_dim, 
                             target_size=target_size, 
                             num_layers=args.lstm_layers, 
-                            dropout_linear=0.2, 
-                            dropout_lstm=0.2)
+                            dropout_linear=args.dropout, 
+                            dropout_lstm=args.dropout)
     #model = LSTM_Multihot_MLP(input_size, embed_size=64, lstm_hidden_size=64, target_size=target_size, num_layers=2, dropout_linear=0.4, dropout_lstm=0.4)
     model = model.to(device)
 
     # Define training variables
     #optimizer = optim.Adam(model.parameters(), lr=0.01)
-    optimizer = optim.Adam(model.parameters(), lr=0.01, weight_decay=1e-4)
+    optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.wd)
     #optimizer = optim.Adam(model.parameters(), lr=0.01, weight_decay=0.00001)
     #optimizer = optim.SGD(model.parameters(), lr=0.0005)
     #optimizer = optim.SGD(model.parameters(), lr=0.0001, momentum=0.9)
@@ -161,9 +161,11 @@ def train(args):
                 print("\nNo improvement found during the last %d epochs, stopping optimization.\n" % early_stopping)
                 break
 
+        '''
         if epoch == 50 or epoch == 100 or epoch == 150:
             for g in optimizer.param_groups:
                 g['lr'] /= 2
+        '''
 
     print('*** Training done! ***')
 
@@ -294,34 +296,22 @@ if __name__ == "__main__":
     np.random.seed(42)
 
     parser = ArgumentParser(description='Train a model')
-    parser.add_argument('--dataset', type=int,
-                        default=8,
-                        help='')
-    parser.add_argument('--hidden-dim', type=int,
-                        default=64,
-                        help='')
-    parser.add_argument('--lstm-layers', type=int,
-                        default=2,
-                        help='')
-    parser.add_argument('--max-epochs', type=int,
-                        default=200,
-                        help='')
-    parser.add_argument('--early-stopping', type=int,
-                        default=15,
-                        help='')
-    parser.add_argument('--seed', type=int,
-                        default=42,
-                        help='')
-    parser.add_argument('--use-saved-dataset', type=bool,
-                        default=False,
-                        help='')
+    parser.add_argument('--dataset', type=int, default=8)
+    parser.add_argument('--hidden-dim', type=int, default=62)
+    parser.add_argument('--lstm-layers', type=int, default=2)
+    parser.add_argument('--max-epochs', type=int, default=200)
+    parser.add_argument('--early-stopping', type=int, default=25)
+    parser.add_argument('--seed', type=int, default=42)
+    parser.add_argument('--lr', type=float, default=0.01)
+    parser.add_argument('--wd', type=float, default=1e-4)
+    parser.add_argument('--dropout', type=float, default=0.2)
+    parser.add_argument('--use-saved-dataset', type=bool, default=False)
+
     parser.add_argument('--save-path', type=str,
-                        # required=True,
                         #default=None,
                         default='models/trained_models/model_name.pth',
                         help='')
     parser.add_argument('--load-path', type=str,
-                        # required=True,
                         default=None,
                         #default='models/trained_models/model_1_dataset_1_s42.pth',
                         help='')
