@@ -161,11 +161,11 @@ def train(args):
                 print("\nNo improvement found during the last %d epochs, stopping optimization.\n" % early_stopping)
                 break
 
-        '''
+        
         if epoch == 50 or epoch == 100 or epoch == 150:
             for g in optimizer.param_groups:
                 g['lr'] /= 2
-        '''
+        
 
     print('*** Training done! ***')
 
