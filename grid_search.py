@@ -7,7 +7,7 @@ import numpy as np
 import collections
 import matplotlib.pyplot as plt
 import sys
-sys.path.append('./Data/')
+sys.path.append('./data/')
 from one_hot_encoding import get_dataset_one_hot
 from multi_hot_encoding import get_dataset_multi_hot
 from models.lstm_chord_models import LSTMChord, LSTMChordEmbedding, LSTMChordEmbedding_Multihot
@@ -21,8 +21,8 @@ import time
 
 def grid_search():
     dataset = 1
-    embed_sizes = [32, 64, 96, 128]
-    layers = [1, 2, 3]
+    embed_sizes = [64, 96, 128, 192]
+    layers = [1, 2, 3, 4]
 
     train_accs = np.empty((len(embed_sizes), len(layers)))
     val_accs = np.empty((len(embed_sizes), len(layers)))
@@ -71,9 +71,6 @@ def train(dataset, hidden_dim, layers):
                         help='')
     parser.add_argument('--early-stopping', type=int,
                         default=15,
-                        help='')
-    parser.add_argument('--patience', type=int,
-                        default=10,
                         help='')
     parser.add_argument('--seed', type=int,
                         default=42,
