@@ -39,9 +39,9 @@ chords_count_discard = chords_count[(chords_count<10)]
 
 def preprocess_chords(beats):
     # Remove empty rows, if melody encoded, empty rows corresponds to -1
-    beats['chord'].replace('NC', np.nan, inplace=True)
+    beats= beats.loc[beats['chord'] != 'NC']
     beats['chord'].replace('', np.nan, inplace=True)
-    beats['chord'].replace(-1, np.nan, inplace=True)
+    # beats['chord'].replace(-1, np.nan, inplace=True)
     beats = beats.dropna()
     beats = beats.assign(root_pitch = beats['chord'].str.slice(stop=1))
 
@@ -354,10 +354,12 @@ def get_dataset5(melody, beats):
     
     beats = beats[['beatid', 'melid', 'bar', 'beat', 'chord', 'bass_pitch']]
 
+    beats = preprocess_chords(beats)    
+    
+    beats = encode_chords_1(beats)
     beats_mel = encode_pitch(melody, beats, pitch_sequence=True)
-    beats_mel = preprocess_chords(beats_mel)
-    beats_mel = encode_chords_1(beats_mel)
-
+    
+    
     unique_chords = pd.unique(beats_mel['new_chord'])
     unique_pitch = pd.unique(beats_mel['Root_pitch'])
     unique_triad = pd.unique(beats_mel['triad'])
@@ -669,7 +671,9 @@ def get_dataset_multi_hot_without_split(choice=1, test_split=0.1):
 path = "./data/wjazzd.db" # REPLACE THIS WITH PATH TO FILE
 engine = create_engine(f"sqlite:///{path}")
 beats = pd.read_sql("beats", engine)
-a,b,c = get_dataset_only_chord_2(beats)
+melody= pd.read_sql("melody", engine)
+
+a,b,c = get_dataset4(melody, beats)
 
 d = pd.unique(a['new_chord'])
 
@@ -683,5 +687,5 @@ anti_join = outer_join[~(outer_join._merge == 'both')]
 
 #.drop('_merge', axis = 1)
 
-lacking_songs = pd.unique(anti_join['melid'])
 
+ee = encode_chords_1(preprocess_chords(beats))

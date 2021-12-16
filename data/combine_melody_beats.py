@@ -83,7 +83,12 @@ def concat_melody_beats(df_melody, df_beats):
     # Replace empty strings by nan and then use ffill to fill with last seen chord
     #df_chords = df_beats.replace({'chord': {'': np.nan}}).ffill()
     #df_chords = df_beats.replace({'new_chord': {'': np.nan}}).ffill()
-    df_chords = df_beats.replace({'': np.nan}).ffill()
+        
+    df_chords = df_beats.replace({'': np.nan})
+    df_chords['melid2'] = df_chords['melid']
+    df_chords['chord'] = df_chords.groupby('melid2')['chord'].transform(lambda v: v.ffill())
+    df_chords= df_chords.loc[df_chords['chord'] != 'NC']
+    df_chords = df_chords.loc[~df_chords['chord'].isna()]
 
     # Define new index with the key (melid, bar, beat)
     new_index = ['melid', 'bar', 'beat']
