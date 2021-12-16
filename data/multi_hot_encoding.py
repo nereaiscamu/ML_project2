@@ -143,6 +143,123 @@ def preprocess_chords(beats):
 
     return beats
 
+
+def preprocess_chords2(beats, mel_included = False):
+    # Remove empty rows, if melody encoded, empty rows corresponds to -1
+    if mel_included == False:
+        beats= beats.loc[beats['chord'] != 'NC']
+        beats['chord'].replace('', np.nan, inplace=True)
+        # beats['chord'].replace(-1, np.nan, inplace=True)
+        beats = beats.dropna()
+        
+    if mel_included == True:
+        beats = beats.replace({'': np.nan})
+        beats['melid2'] = beats['melid']
+        beats['chord'] = beats.groupby('melid2')['chord'].transform(lambda v: v.ffill())
+        beats= beats.loc[beats['chord'] != 'NC']
+        beats = beats.loc[~beats['chord'].isna()]
+        
+        
+    beats = beats.assign(root_pitch = beats['chord'].str.slice(stop=1))
+
+    # the first letter is always the root note, 
+    # but for the 12 basic pitches we also need sharp and flat modifications (second position)
+    beats = beats.assign(mod = beats['chord'].str.slice(start = 1, stop = 2))
+    mods_to_keep = ['#', 'b']
+    beats['mod2'] = 0
+    beats.loc[ beats['mod'] == '#', "mod2"] = '#'
+    beats.loc[ beats['mod'] == 'b', "mod2"] = 'b'
+    beats.loc[ ~beats['mod'].isin(mods_to_keep), 'mod2'] = ""
+    beats.loc[ ~beats['mod'].isin(mods_to_keep), 'chord_info'] = beats['chord'].str.slice(start = 1)
+    beats.loc[ beats['mod'].isin(mods_to_keep), 'chord_info'] = beats['chord'].str.slice(start = 2)
+
+
+    '''for the complete pitch we need the note and the flat/sharp modification'''
+    beats['complete_pitch'] = beats['root_pitch'].str.cat(beats['mod2'])
+
+    '''Now we need to consider that C# = Db --> map all 'b' to the equivalent '#' pitch'''
+
+    beats['Root_pitch'] = beats['complete_pitch']
+    beats.loc[ beats['complete_pitch'] == 'Db', "Root_pitch"] = 'C#'
+    beats.loc[ beats['complete_pitch'] == 'Eb', "Root_pitch"] = 'D#'
+    beats.loc[ beats['complete_pitch'] == 'Fb', "Root_pitch"] = 'E'
+    beats.loc[ beats['complete_pitch'] == 'Gb', "Root_pitch"] = 'F#'
+    beats.loc[ beats['complete_pitch'] == 'Ab', "Root_pitch"] = 'G#'
+    beats.loc[ beats['complete_pitch'] == 'Bb', "Root_pitch"] = 'A#'
+    beats.loc[ beats['complete_pitch'] == 'Cb', "Root_pitch"] = 'B'
+
+    # *** Now only 12 pitches + No Chord ***
+
+    #beats = beats[['beatid', 'melid', 'chord', 'Root_pitch', 'chord_info', 'bar', 'beat', 'bass_pitch']] #remove useless columns
+    beats = beats.drop(['mod', 'mod2', 'complete_pitch', 'root_pitch'], axis=1)
+
+    # NOW WE ADD A SECOND VECTOR WITH ALL THE INFO ABOUT THE CHORD BUT THE ROOT PITCH
+
+    ''' Remove or change useless information'''
+
+    beats['chord_map'] = beats['chord_info']
+    beats['chord_map'] = beats['chord_map'].str.replace('\/(.*)','')
+    beats['chord_map'] = beats['chord_map'].str.replace('m','-')
+    beats['chord_map'] = beats['chord_map'].str.replace('7alt','7')
+    
+    old_added_notes = ['9#','9b', '9', '11b', '11#', '11', '13b', '13#', '13']
+    
+    # When encoding the melody, type gets changed, need to change type to prevent error for ~ operator in beats.loc[~...
+    beats['chord_map'] = beats['chord_map'].astype(str)
+
+    for i in old_added_notes:
+        beats.loc[beats['chord_map'].str.contains('6', regex = False) == True, 
+                  'chord_map' ] = beats['chord_map'].str.replace(i,'')
+        beats.loc[~beats['chord_map'].str.contains('6', regex = False) == True, 
+                  'chord_map' ] = beats['chord_map'].str.replace(i,'7')
+        beats['chord_map'] = beats['chord_map'].str.replace('77','7') #to avoid repeated 7
+        
+    beats['new_chord'] = beats['Root_pitch'].str.cat(beats['chord_map'])
+
+    
+    #  Dataset 3: 3 VECTORS, ONE FOR THE ROOT PITCH, A SECOND FOR THE TRIAD FORM AND A THIRD FOR ADDED NOTES
+    
+    '''The 2 vectors will be created using the first mapping of the previous dataset.'''    
+    
+    ''' TRIAD VECTOR '''
+    beats['triad'] = 'M'    #initialise the triad form to major
+    modes = ['o', '-', '+', 'sus'] #define other forms
+    
+    
+    for i in modes:
+        beats.loc[beats['chord_map'].str.contains(i, regex = False) == True, 
+                  'triad' ] = i #fill the triad variable with the information in the chord mapping
+    
+    beats.loc[beats['chord_map'].str.contains('7b5', regex = False) == True, 
+              'triad' ] = 'half' #Add the half-diminished form, only for 7b5 chords
+        
+    
+    ''' ADDED NOTE VECTOR '''
+        
+    beats['added_note'] = beats['chord_map']
+    
+    #remove all information which is already in the triad form vector 
+    # (7alt --> mapped to 7)
+    remove_note_info = ['-', '+', 'sus',  'b5'] 
+    for i in remove_note_info:
+        beats['added_note'] = beats['added_note'].str.replace(i,'')
+    
+    # 'C' from  No Chord is removed
+    beats['added_note'] = beats['added_note'].str.replace('C','')
+    
+    # in the added note, diminished is only kept when it affects the 7th note
+    # if only for the triad, already in the previous vector
+    beats.loc[ beats['added_note'] == 'o', "added_note"] = ''
+    beats.loc[ beats['added_note'] == '7', "added_note"] = 'm7'
+    beats.loc[beats['added_note'] == '', 'added_note'] = 'none'
+    
+    # beats.loc[beats['chord_info'] == 'C', 'triad'] = 'none'
+    # beats.loc[beats['chord_info'] == 'C', 'chord_info'] = 'No Chord'
+        
+    # 'triad' contains 6 elements. 'added_note' contains 6 elements. Option 2: Root pitch (13) + triad (6) + extra_node (6)
+
+    return beats
+
 def encode_chords_1(table):
     unique_chords = pd.unique(table['new_chord'])
     unique_pitch = pd.unique(table['Root_pitch'])
