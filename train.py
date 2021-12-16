@@ -7,7 +7,7 @@ import numpy as np
 import collections
 import matplotlib.pyplot as plt
 import sys
-sys.path.append('./Data/')
+sys.path.append('./data/')
 from one_hot_encoding import get_dataset_one_hot
 from multi_hot_encoding import get_dataset_multi_hot
 from models.lstm_chord_models import LSTMChord, LSTMChordEmbedding, LSTMChordEmbedding_Multihot
@@ -33,13 +33,13 @@ def get_accuracy_vl(outputs, targets):
 
   return 100 * (flat_outputs[mask] == flat_targets[mask]).sum() / sum(mask)
 
-def get_val_loss(model, val_dataset):
+def get_val_loss(model, val_dataset, device):
     model.eval()
     val_loader = DataLoader(val_dataset, batch_size=len(val_dataset), shuffle=False) 
 
     for batch_idx, batch in enumerate(val_loader):
-        inputs = batch["input"].float()
-        targets = batch["target"]
+        inputs = batch["input"].float().to(device)
+        targets = batch["target"].to(device)
         lengths = batch["length"]
 
         outputs = model(inputs, lengths)
@@ -49,7 +49,7 @@ def get_val_loss(model, val_dataset):
 
 
 # DM
-def evaluate_model(model, dataset):
+def evaluate_model(model, dataset, device):
     # TODO idk if this is the best way to load test data. what is the role of batch_size here?
     model.eval()
     loader = DataLoader(dataset, batch_size=len(dataset), shuffle=False) 
@@ -57,8 +57,8 @@ def evaluate_model(model, dataset):
     correct = 0
     total = 0
     for batch_idx, batch in enumerate(loader):
-        inputs = batch["input"].float()
-        targets = batch["target"]
+        inputs = batch["input"].float().to(device)
+        targets = batch["target"].to(device)
         lengths = batch["length"]
 
         preds = model(inputs, lengths)
@@ -81,15 +81,31 @@ def train(args):
     # 354 training samples
     batch_size = 20
 
-    #train_dataset, val_dataset, test_dataset, input_size, target_size = get_dataset_multi_hot_new_encoding(choice=2)
-    train_dataset, val_dataset, test_dataset, input_size, target_size = get_dataset_multi_hot(choice=1)
+    cuda = torch.cuda.is_available()
+    device = torch.device("cuda" if cuda else "cpu")
+
+    if args.use_saved_dataset:
+        with open('data/datasets/dataset' + str(args.dataset) + '.pickle', 'rb') as f:
+            (train_dataset, val_dataset, test_dataset, input_size, target_size) = pickle.load(f)
+        print('*** Dataset ' + str(args.dataset) + ' loaded from file ***')
+    else:
+        #train_dataset, val_dataset, test_dataset, input_size, target_size = get_dataset_multi_hot_new_encoding(choice=2)
+        train_dataset, val_dataset, test_dataset, input_size, target_size = get_dataset_multi_hot(choice=args.dataset, seed=args.seed)
+    
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True) 
 
     # Create model
     #model = LSTMChord(vocab_size, lstm_hidden_size=16)
     #model = LSTMChordEmbedding(vocab_size, embed_size=16, lstm_hidden_size=16)
-    model = LSTM_Multihot(input_size, embed_size=64, lstm_hidden_size=64, target_size=target_size, num_layers=2, dropout_linear=0.4, dropout_lstm=0.4)
+    model = LSTM_Multihot(input_size, 
+                            embed_size=args.hidden_dim, 
+                            lstm_hidden_size=args.hidden_dim, 
+                            target_size=target_size, 
+                            num_layers=args.lstm_layers, 
+                            dropout_linear=0.2, 
+                            dropout_lstm=0.2)
     #model = LSTM_Multihot_MLP(input_size, embed_size=64, lstm_hidden_size=64, target_size=target_size, num_layers=2, dropout_linear=0.4, dropout_lstm=0.4)
+    model = model.to(device)
 
     # Define training variables
     #optimizer = optim.Adam(model.parameters(), lr=0.01)
@@ -98,7 +114,9 @@ def train(args):
     #optimizer = optim.SGD(model.parameters(), lr=0.0005)
     #optimizer = optim.SGD(model.parameters(), lr=0.0001, momentum=0.9)
 
-    epochs = 100
+    epochs = args.max_epochs
+    best_cost = 1000
+    early_stopping = args.early_stopping
     train_losses = []
     val_losses = []
     train_accuracies = []
@@ -106,16 +124,13 @@ def train(args):
 
     # TRAIN
     n_batches = np.ceil(len(train_dataset)/batch_size)
-
-    early_stopping = 10
-    losses = collections.deque(maxlen=early_stopping)
     for epoch in range(epochs):
         model.train()
         epoch_loss = 0
         for batch_idx, batch in enumerate(train_loader):
-            inputs = batch["input"].float()
+            inputs = batch["input"].float().to(device)
             lengths = batch["length"]
-            targets = batch["target"][:, :max(lengths)] 
+            targets = batch["target"][:, :max(lengths)].to(device)
 
             optimizer.zero_grad()
             outputs = model(inputs, lengths)
@@ -130,14 +145,21 @@ def train(args):
         model.eval()
         train_losses.append(epoch_loss)
         
-        val_losses.append(get_val_loss(model, val_dataset))
-        train_accuracies.append(evaluate_model(model, train_dataset))
-        val_accuracies.append(evaluate_model(model, val_dataset))
+        val_losses.append(get_val_loss(model, val_dataset, device))
+        train_accuracies.append(evaluate_model(model, train_dataset, device))
+        val_accuracies.append(evaluate_model(model, val_dataset, device))
         print("EPOCH %d\tTrain/val loss: \t%.4f\t%.4f\t\tTrain/val accuracy: \t%.2f\t%.2f" % (epoch, epoch_loss, val_losses[-1], train_accuracies[-1], val_accuracies[-1]))
 
-        losses.append(val_losses[-1])
-        if len(losses) == early_stopping and losses[-1] >= max(losses):
-            break
+        # Early stopping based on the validation set:
+        # Check that improvement has been made in the last X epochs
+        if val_losses[-1] < best_cost:
+            best_cost = val_losses[-1]
+            last_improvement = 0
+        else:
+            last_improvement +=1
+            if last_improvement > early_stopping:
+                print("\nNo improvement found during the last %d epochs, stopping optimization.\n" % early_stopping)
+                break
 
         if epoch == 50 or epoch == 100 or epoch == 150:
             for g in optimizer.param_groups:
@@ -146,11 +168,11 @@ def train(args):
     print('*** Training done! ***')
 
     # EVALUATE
-    tr_acc = evaluate_model(model, train_dataset)
+    tr_acc = evaluate_model(model, train_dataset, device)
     print('Train accuracy:\t%.2f' % tr_acc)
-    val_acc = evaluate_model(model, val_dataset)
+    val_acc = evaluate_model(model, val_dataset, device)
     print('Val accuracy:\t%.2f' % val_acc)
-    te_acc = evaluate_model(model, test_dataset)
+    te_acc = evaluate_model(model, test_dataset, device)
     print('Test accuracy:\t%.2f' % te_acc)
 
     plt.plot(train_losses, label='Train')
@@ -172,8 +194,10 @@ def train(args):
     if args.save_path is not None:
         torch.save(model.state_dict(), args.save_path)
 
+    return tr_acc, val_acc, epoch
+
 def load_model(load_path):
-    train_dataset, val_dataset, test_dataset, input_size, target_size = get_dataset_multi_hot(choice=1)
+    train_dataset, val_dataset, test_dataset, input_size, target_size = get_dataset_multi_hot(choice=7)
 
     len_sequences = len(train_dataset) + len(val_dataset) + len(test_dataset)
     random_idxs = np.random.RandomState(seed=42).permutation(len_sequences)
@@ -257,10 +281,6 @@ def load_model(load_path):
         acc = correct/sum(mask) * 100
 
         print('Number chords in the song: ', lengths[0])
-        #print('Preds') 
-        #print(preds)
-        #print('Target') 
-        #print(targets[mask])
         print('\nPredictions') 
         print(preds_chord)
         print('\nTargets') 
@@ -274,18 +294,38 @@ if __name__ == "__main__":
     np.random.seed(42)
 
     parser = ArgumentParser(description='Train a model')
+    parser.add_argument('--dataset', type=int,
+                        default=8,
+                        help='')
+    parser.add_argument('--hidden-dim', type=int,
+                        default=64,
+                        help='')
+    parser.add_argument('--lstm-layers', type=int,
+                        default=2,
+                        help='')
+    parser.add_argument('--max-epochs', type=int,
+                        default=200,
+                        help='')
+    parser.add_argument('--early-stopping', type=int,
+                        default=15,
+                        help='')
+    parser.add_argument('--seed', type=int,
+                        default=42,
+                        help='')
+    parser.add_argument('--use-saved-dataset', type=bool,
+                        default=False,
+                        help='')
     parser.add_argument('--save-path', type=str,
                         # required=True,
                         #default=None,
-                        default='models/trained_models/model_trained_nerea.pth',
+                        default='models/trained_models/model_name.pth',
                         help='')
     parser.add_argument('--load-path', type=str,
                         # required=True,
-
                         default=None,
                         #default='models/trained_models/model_1_dataset_1_s42.pth',
                         help='')
-
+            
     args = parser.parse_args()
 
     if args.load_path is not None:
