@@ -1,12 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Fri Dec 17 09:26:26 2021
-
-@author: nerea
-"""
-
-#%% Import libraries
-
 from sqlalchemy import create_engine
 import pandas as pd
 import numpy as np
@@ -16,38 +7,42 @@ import pickle
 import os
 import sys
 sys.path.append('../')
+from data.combine_melody_beats import encode_pitch
 
-path = "./data/wjazzd.db" # REPLACE THIS WITH PATH TO FILE
+
+'''
+path = "wjazzd.db" # REPLACE THIS WITH PATH TO FILE
 engine = create_engine(f"sqlite:///{path}")
 beats = pd.read_sql("beats", engine)
-melody= pd.read_sql("melody", engine)
+'''
+### THIS PART WAS ONLY DATA EXPLORING
+#chords = pd.unique(beats['chord'])
+#signature =  pd.unique(beats['signature'])
+#form = pd.unique(beats['form'])
+#pitch = pd.unique(beats['bass_pitch'])[0:25]
 
-# beats['chord'].replace(-1, np.nan, inplace=True)
-# beats = beats.dropna()
+''' HERE IS TO DECIDE HOW WIDE SOULD OUR VOCABULARY BE DEPENDING ON THE CHORDS APPEARING LESS THAN X TIMES
+BE CAREFUL AS SOME VERY BASIC CHORDS ARE ALMOST NOT USED (AS D), but the algorithm should predict it '''
 
+'''
+l = beats['chord']
+l.replace('', np.nan, inplace=True)
+l.dropna(inplace=True)
+hist = l.value_counts().plot(kind='bar')
+chords_count = l.value_counts()
+chords_count_keep = chords_count[(chords_count >=10)]
+chords_count_discard = chords_count[(chords_count<10)]
+'''
 
-
-#%%
 
 ### Here is the part to build the chord vocabulary
 
-
-def preprocess_chords(beats, mel_included = False):
+def preprocess_chords(beats):
     # Remove empty rows, if melody encoded, empty rows corresponds to -1
-    if mel_included == False:
-        beats= beats.loc[beats['chord'] != 'NC']
-        beats['chord'].replace('', np.nan, inplace=True)
-        # beats['chord'].replace(-1, np.nan, inplace=True)
-        beats = beats.loc[~beats['chord'].isna()]
-        
-    if mel_included == True:
-        beats = beats.replace({'': np.nan})
-        beats['melid2'] = beats['melid']
-        beats['chord'] = beats.groupby('melid2')['chord'].transform(lambda v: v.ffill())
-        beats= beats.loc[beats['chord'] != 'NC']
-        beats = beats.loc[~beats['chord'].isna()]
-        
-        
+    beats= beats.loc[beats['chord'] != 'NC']
+    beats['chord'].replace('', np.nan, inplace=True)
+    # beats['chord'].replace(-1, np.nan, inplace=True)
+    beats = beats.dropna()
     beats = beats.assign(root_pitch = beats['chord'].str.slice(stop=1))
 
     # the first letter is always the root note, 
@@ -148,94 +143,7 @@ def preprocess_chords(beats, mel_included = False):
 
     return beats
 
-def concat_melody_beats3(df_melody, df_beats):
-    """
-    Uses the output of the preprocess_chords for mel_included = True
 
-    Args:
-        df_melody: Dataframe of the melody table
-        df_beats: Dataframe of the beats table (after preprocessing)
-
-    Returns:
-        Dataframe consisting of the combination of both tables
-    """
-    # Remove useless columns
-    df_melody = df_melody[['eventid', 'melid', 'pitch', 'duration', 'bar', 'beat']]
-
-    # Define new index with the key (melid, bar, beat)
-    new_index = ['melid', 'bar', 'beat']
-    df_chords_new = df_beats.set_index(new_index, drop=True)
-    df_melody_new = df_melody.set_index(new_index, drop=True)
-
-    # Concatenate the dataframes using the new index and then reset the index again
-    df_beats_mel = df_chords_new.merge(df_melody_new, left_on=new_index, right_on=new_index, how='left')
-    df_beats_mel = df_beats_mel.reset_index(drop=False)
-
-    return df_beats_mel
-
-def encode_pitch(df_melody, df_beats, pitch_sequence=False):
-    """
-    Encodes the pitches of the melody in combination with the beats.
-
-    Args:
-        df_melody: Dataframe of the melody table
-        df_beats: Dataframe of the beats table
-        pitch_sequence: Boolean to use pitch per chord (False) or sequence of chord (True) 
-
-    Returns:
-        Dataframe containing the encoded pitches
-    """
-
-    df_beats_mel = concat_melody_beats3(df_melody, df_beats)
-    
-    # Encode pitch
-    df_beats_mel['pitch_encoded'] = np.mod(df_beats_mel['pitch'], 12)
-    df_beats_mel['bass_pitch_encoded'] = np.mod(df_beats_mel['bass_pitch'], 12)
-
-    df_beats_mel.fillna(-1, inplace=True)
-    df_beats_mel['pitch_encoded'] = df_beats_mel['pitch_encoded'].astype(int)
-    max_pitch = df_beats_mel['pitch_encoded'].max()
-    df_beats_mel['bass_pitch_encoded'] = df_beats_mel['bass_pitch_encoded'].astype(int)
-    df_beats_mel['duration'] = df_beats_mel['duration'].round(4)
-
-    ## Encode pitch for every chord of melody
-    if not pitch_sequence:
-        return df_beats_mel
-
-    ## Encode sequence of pitch for every chord
-    # Add column that represent chord changes
-    df_beats_mel['chord_changed'] = (df_beats_mel['chord'].shift() != df_beats_mel["chord"]).cumsum()
-
-    # Group chord changes to get sequences
-    pitch_sequences = [g['pitch_encoded'].tolist() for k, g in df_beats_mel.groupby('chord_changed')]
-    bass_pitch_sequences = [g['bass_pitch_encoded'].tolist() for k, g in df_beats_mel.groupby('chord_changed')]
-    duration_sequence = [g['duration'].tolist() for k, g in df_beats_mel.groupby('chord_changed')]
-
-    # Identify last row of current chord
-    df_beats_mel['pitch_sequence'] = (df_beats_mel['chord'].shift(-1) != df_beats_mel["chord"])
-
-    # Change type to type object to add list to cell
-    df_beats_mel['pitch_sequence'] = df_beats_mel['pitch_sequence'].astype(object)
-    df_beats_mel['bass_pitch_sequence'] = df_beats_mel['pitch_sequence']
-    df_beats_mel['duration_sequence'] = df_beats_mel['pitch_sequence']
-
-    # Set sequence to last chord
-    # TODO decrease running time if possible
-    for idx, _ in df_beats_mel.iterrows():
-        if df_beats_mel.at[idx, 'pitch_sequence'] == True:
-            df_beats_mel.at[idx, 'pitch_sequence'] = pitch_sequences.pop(0)
-            df_beats_mel.at[idx, 'bass_pitch_sequence'] = bass_pitch_sequences.pop(0)
-            df_beats_mel.at[idx, 'duration_sequence'] = duration_sequence.pop(0)
-
-    # melody_encoded = [np.zeros(max_pitch) for _ in range(len(df_beats_mel))]
-    # df_beats_mel['melody_encoded'] = melody_encoded
-    df_beats_mel.drop(['bass_pitch_encoded', 'chord_changed'], axis=1, inplace=True)
-    df_beats_mel.drop(df_beats_mel[df_beats_mel['pitch_sequence'] == False].index, inplace=True)
-
-    return df_beats_mel
-
-
-#%%
 
 def encode_chords_1(table):
     unique_chords = pd.unique(table['new_chord'])
@@ -301,12 +209,6 @@ def encode_chords_2(table):
 
     return table
 
-
-
-#%% 
-
-''' Defining datasets '''
-
 def get_dataset_only_chord_1(beats):
     '''
     Dataset 2: Multi-hot. Combination of 3 One-Hot vectors:
@@ -315,8 +217,8 @@ def get_dataset_only_chord_1(beats):
         (3): Extra note. Vocab size = 4
     '''
     #beats['chord'].replace('', np.nan, inplace=True)
-    beats = beats[['beatid', 'melid', 'chord', 'bar', 'beat', 'bass_pitch']]
-    beats = preprocess_chords(beats, mel_included = False)
+    beats = beats[['beatid', 'melid', 'chord', 'bar', 'beat', 'bass_pitch']].dropna()
+    beats = preprocess_chords(beats)
     beats = encode_chords_1(beats)
 
     unique_chords = pd.unique(beats['new_chord'])
@@ -341,8 +243,8 @@ def get_dataset_only_chord_2(beats):
         (2): Chord info. Vocab size = 14
     '''
     # beats['chord'].replace('', np.nan, inplace=True)
-    beats = beats[['beatid', 'melid', 'chord']]
-    beats = preprocess_chords(beats, mel_included = False)
+    beats = beats[['beatid', 'melid', 'chord']].dropna()
+    beats = preprocess_chords(beats)
 
     beats = encode_chords_2(beats)
 
@@ -360,6 +262,52 @@ def get_dataset_only_chord_2(beats):
     return beats, vocab_sizes, target_size
 
 
+# def get_dataset3(melody, beats):
+#     """
+#     Dataset 3: Multi-hot. Combination of 3 One-Hot vectors for chord encoding + Melody encoding
+#         (1): Root pitch and '#'. Vocab size = 13
+#         (2): Whether or not it is minor
+#         (3): Other chord info
+#         (4): Melody pitch. One entry for each note played
+#     """
+#     beats = beats[['beatid', 'melid', 'bar', 'beat', 'chord', 'bass_pitch']]
+#     mel_beats = encode_pitch(melody, beats, pitch_sequence=False)
+#     mel_beats = preprocess_chords(mel_beats)
+
+#     unique_chords = pd.unique(mel_beats['new_chord'])
+#     unique_pitch = pd.unique(mel_beats['Root_pitch'])
+#     unique_minor = pd.unique(mel_beats['minor'])
+#     unique_chord_info = pd.unique(mel_beats['chord_map'])
+#     unique_notes = pd.unique(mel_beats['pitch_encoded'])
+#     vocab_sizes = [len(unique_pitch), len(unique_minor), len(unique_chord_info), len(unique_notes)]
+    
+#     # Encode each final pitch to a number by order of appearnce
+#     Root_pitch_map = {}
+#     for i, c in enumerate(unique_pitch):
+#         Root_pitch_map[c] = i
+#     mel_beats['Root_pitch_num'] = mel_beats['Root_pitch'].map(Root_pitch_map)
+
+#     # Encode chord info
+#     chord_info_map = {}
+#     for i, c in enumerate(unique_chord_info):
+#         chord_info_map[c] = i
+#     mel_beats['chord_info_num'] = mel_beats['chord_info'].map(chord_info_map)
+
+#     # Encode new chord
+#     new_chord_map = {}
+#     for i, c in enumerate(unique_chords):
+#         new_chord_map[c] = i
+#     mel_beats['new_chord_num'] = mel_beats['new_chord'].map(new_chord_map)
+
+#     target_size = len(unique_chords)
+#     print('\nUsing a total chord vocab size of %d (One-hot)' % len(unique_chords))
+#     print('Multi-hot input:')
+#     print('\t(1): Root pitch and #. Vocab size of %d' % len(unique_pitch))
+#     print('\t(2): Whether or not it is minor. Binary flag, size %d' % len(unique_minor))
+#     print('\t(3): Other chord info. Vocab size of %d' % len(unique_chord_info))
+#     print('\t(4): Melody pitch. Vocab size of %d\n' % len(unique_notes))
+
+#     return mel_beats, vocab_sizes, target_size
 
 
 def get_dataset4(melody, beats):
@@ -370,12 +318,13 @@ def get_dataset4(melody, beats):
         (3): Other chord info
         (4): Melody encoding. All notes combined into one embedding
     """
-    beats = beats[['beatid', 'melid', 'bar', 'beat', 'chord', 'bass_pitch']]
+    beats['chord'].replace('', np.nan, inplace=True)
+    beats = beats[['beatid', 'melid', 'bar', 'beat', 'chord', 'bass_pitch']].dropna()
 
-    beats = preprocess_chords(beats, mel_included = True)
+    beats = preprocess_chords(beats)
     beats = encode_chords_1(beats)
+
     mel_beats = encode_pitch(melody, beats, pitch_sequence=True)
-    
 
     unique_chords = pd.unique(mel_beats['new_chord'])
     unique_pitch = pd.unique(mel_beats['Root_pitch'])
@@ -407,9 +356,10 @@ def get_dataset5(melody, beats):
     
     beats = beats[['beatid', 'melid', 'bar', 'beat', 'chord', 'bass_pitch']]
 
-    beats = preprocess_chords(beats, mel_included = True)
-    beats_mel = encode_pitch(melody, beats, pitch_sequence=True)    
+    beats = preprocess_chords(beats)    
+    
     beats = encode_chords_1(beats)
+    beats_mel = encode_pitch(melody, beats, pitch_sequence=True)
     
     
     unique_chords = pd.unique(beats_mel['new_chord'])
@@ -429,8 +379,6 @@ def get_dataset5(melody, beats):
 
     return beats_mel, vocab_sizes, target_size
 
-
-#%%
 def get_dataset_multi_hot(choice=1, val_split=0.1, test_split=0.1, seed=42):
     '''
     Generate train and test dataset. Based on dataset choice
@@ -719,3 +667,27 @@ def get_dataset_multi_hot_without_split(choice=1, test_split=0.1):
 
 # if __name__ == "__main__":
 #     get_dataset_multi_hot(choice=1)
+
+#%%
+
+path = "./data/wjazzd.db" # REPLACE THIS WITH PATH TO FILE
+engine = create_engine(f"sqlite:///{path}")
+beats = pd.read_sql("beats", engine)
+melody= pd.read_sql("melody", engine)
+
+a,b,c = get_dataset4(melody, beats)
+
+d = pd.unique(a['new_chord'])
+
+e, _, _ = get_dataset_only_chord_1(beats)
+
+f = pd.unique(e['new_chord'])
+
+outer_join = e[['beatid', 'melid', 'new_chord']].merge(a[['beatid', 'melid', 'new_chord']], how = 'outer', indicator = True)
+
+anti_join = outer_join[~(outer_join._merge == 'both')]
+
+#.drop('_merge', axis = 1)
+
+
+ee = encode_chords_1(preprocess_chords(beats))
