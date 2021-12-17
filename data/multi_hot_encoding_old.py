@@ -346,21 +346,19 @@ def get_dataset4(melody, beats):
 
 def get_dataset5(melody, beats):
     """
-    Dataset 4: Multi-hot. Combination of 3 One-Hot vectors for chord encoding + Melody encoding
+    Dataset 5: Multi-hot. Combination of 3 One-Hot vectors for chord encoding + Melody encoding
         (1): Root pitch and '#'. Vocab size = 13
         (2): Whether or not it is minor
         (3): Other chord info
         (4): Melody encoding. All notes combined into one embedding
         (5): Bass pitch encoding
     """
-    
+    print('Dataset 5')
     beats = beats[['beatid', 'melid', 'bar', 'beat', 'chord', 'bass_pitch']]
 
-    beats = preprocess_chords(beats)    
-    
-    beats = encode_chords_1(beats)
     beats_mel = encode_pitch(melody, beats, pitch_sequence=True)
-    
+    beats_mel = preprocess_chords(beats_mel)    
+    beats_mel = encode_chords_1(beats_mel)
     
     unique_chords = pd.unique(beats_mel['new_chord'])
     unique_pitch = pd.unique(beats_mel['Root_pitch'])
@@ -392,11 +390,14 @@ def get_dataset_multi_hot(choice=1, val_split=0.1, test_split=0.1, seed=42):
         8: Multi-hot chord encoding + weighted melody encoding
     '''
 
+    print('get_dataset_multi_hot')
+
     path = "./data/wjazzd.db" # REPLACE THIS WITH PATH TO FILE
     engine = create_engine(f"sqlite:///{path}")
     beats_raw = pd.read_sql("beats", engine)
     melody_raw = pd.read_sql("melody", engine)
 
+    print('select choice : ', choice)
     if choice == 1:
         beats, vocab_sizes, target_size = get_dataset_only_chord_1(beats_raw)
     if choice == 2:
@@ -415,6 +416,7 @@ def get_dataset_multi_hot(choice=1, val_split=0.1, test_split=0.1, seed=42):
     # for each song load its chord seq
     for i in range(1, num_mels+1):
         song = beats.loc[beats['melid'] == i]
+        print(song.columns)
         seq_pitch = song['Root_pitch_num'].to_numpy()
         seq_one_hot = song['new_chord_num'].to_numpy()
 

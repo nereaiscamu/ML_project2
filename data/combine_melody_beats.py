@@ -1,8 +1,7 @@
 import numpy as np
-import pandas as pd
 import pdb
 
-def encode_pitch(df_melody, df_beats, pitch_sequence=False):
+def encode_melody(df_melody, df_beats, pitch_sequence=False):
     """
     Encodes the pitches of the melody in combination with the beats.
 
@@ -15,7 +14,7 @@ def encode_pitch(df_melody, df_beats, pitch_sequence=False):
         Dataframe containing the encoded pitches
     """
 
-    df_beats_mel = concat_melody_beats(df_melody, df_beats)
+    df_beats_mel = merge_beats_melody(df_melody, df_beats)
     
     # Encode pitch
     df_beats_mel['pitch_encoded'] = np.mod(df_beats_mel['pitch'], 12)
@@ -23,7 +22,6 @@ def encode_pitch(df_melody, df_beats, pitch_sequence=False):
 
     df_beats_mel.fillna(-1, inplace=True)
     df_beats_mel['pitch_encoded'] = df_beats_mel['pitch_encoded'].astype(int)
-    max_pitch = df_beats_mel['pitch_encoded'].max()
     df_beats_mel['bass_pitch_encoded'] = df_beats_mel['bass_pitch_encoded'].astype(int)
     df_beats_mel['duration'] = df_beats_mel['duration'].round(4)
 
@@ -61,10 +59,13 @@ def encode_pitch(df_melody, df_beats, pitch_sequence=False):
     df_beats_mel.drop(['bass_pitch_encoded', 'chord_changed'], axis=1, inplace=True)
     df_beats_mel.drop(df_beats_mel[df_beats_mel['pitch_sequence'] == False].index, inplace=True)
 
+    # Remove rows where the Chord is -1
+    df_beats_mel.drop(df_beats_mel[df_beats_mel['chord'] == -1].index, inplace=True)
+
     return df_beats_mel
 
 
-def concat_melody_beats(df_melody, df_beats):
+def merge_beats_melody(df_melody, df_beats):
     """
     Fills the chords in the beats table and combines the melody table and the beats table 
     using the MultiIndex key of (melid, bar, beat).
@@ -80,10 +81,7 @@ def concat_melody_beats(df_melody, df_beats):
     df_melody = df_melody[['eventid', 'melid', 'pitch', 'duration', 'bar', 'beat']]
     #df_beats = df_beats[['beatid', 'melid', 'bar', 'beat', 'chord', 'bass_pitch']]
 
-    # Replace empty strings by nan and then use ffill to fill with last seen chord
-    #df_chords = df_beats.replace({'chord': {'': np.nan}}).ffill()
-    #df_chords = df_beats.replace({'new_chord': {'': np.nan}}).ffill()
-        
+    # Replace empty strings by nan and then use ffill to fill with last seen chord        
     df_chords = df_beats.replace({'': np.nan})
     df_chords['melid2'] = df_chords['melid']
     df_chords['chord'] = df_chords.groupby('melid2')['chord'].transform(lambda v: v.ffill())

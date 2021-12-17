@@ -8,6 +8,7 @@ Created on Fri Dec 17 09:26:26 2021
 #%% Import libraries
 
 from sqlalchemy import create_engine
+from combine_melody_beats import encode_melody
 import pandas as pd
 import numpy as np
 from dataset import OneHot_VLDataset, MultiHot_VLDataset, MultiHot_MelodyEncoded_VLDataset, MultiHot_MelodyBassEncoded_VLDataset, MultiHot_MelodyDurationEncoded_VLDataset, MultiHot_MelodyWeighted_VLDataset
@@ -17,14 +18,10 @@ import os
 import sys
 sys.path.append('../')
 
-path = "./data/wjazzd.db" # REPLACE THIS WITH PATH TO FILE
-engine = create_engine(f"sqlite:///{path}")
-beats = pd.read_sql("beats", engine)
-melody= pd.read_sql("melody", engine)
-
-# beats['chord'].replace(-1, np.nan, inplace=True)
-# beats = beats.dropna()
-
+# path = "./data/wjazzd.db" # REPLACE THIS WITH PATH TO FILE
+# engine = create_engine(f"sqlite:///{path}")
+# beats = pd.read_sql("beats", engine)
+# melody= pd.read_sql("melody", engine)
 
 
 #%%
@@ -267,9 +264,9 @@ def encode_chords_1(table):
         new_chord_map[c] = i
     table['new_chord_num'] = table['new_chord'].map(new_chord_map)
     
-    a_file = open("models/new_chord_map.pkl", "wb")
-    pickle.dump(new_chord_map, a_file)
-    a_file.close()
+    # a_file = open("models/new_chord_map.pkl", "wb")
+    # pickle.dump(new_chord_map, a_file)
+    # a_file.close()
 
     return table
 
@@ -372,10 +369,9 @@ def get_dataset4(melody, beats):
     """
     beats = beats[['beatid', 'melid', 'bar', 'beat', 'chord', 'bass_pitch']]
 
-    beats = preprocess_chords(beats, mel_included = True)
-    beats = encode_chords_1(beats)
     mel_beats = encode_pitch(melody, beats, pitch_sequence=True)
-    
+    mel_beats = preprocess_chords(mel_beats, mel_included = True)
+    mel_beats = encode_chords_1(mel_beats)
 
     unique_chords = pd.unique(mel_beats['new_chord'])
     unique_pitch = pd.unique(mel_beats['Root_pitch'])
@@ -407,9 +403,9 @@ def get_dataset5(melody, beats):
     
     beats = beats[['beatid', 'melid', 'bar', 'beat', 'chord', 'bass_pitch']]
 
-    beats = preprocess_chords(beats, mel_included = True)
-    beats_mel = encode_pitch(melody, beats, pitch_sequence=True)    
-    beats = encode_chords_1(beats)
+    beats_mel = encode_melody(melody, beats, pitch_sequence=True)    
+    beats_mel = preprocess_chords(beats_mel, mel_included = True)
+    beats_mel = encode_chords_1(beats_mel)
     
     
     unique_chords = pd.unique(beats_mel['new_chord'])

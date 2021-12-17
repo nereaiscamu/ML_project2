@@ -6,7 +6,6 @@ import pdb
 
 import sys
 sys.path.append('../')
-from data.combine_melody_beats import encode_pitch
 
 
 '''
