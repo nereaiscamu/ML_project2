@@ -18,10 +18,10 @@ import os
 import sys
 sys.path.append('../')
 
-# path = "./data/wjazzd.db" # REPLACE THIS WITH PATH TO FILE
-# engine = create_engine(f"sqlite:///{path}")
-# beats = pd.read_sql("beats", engine)
-# melody= pd.read_sql("melody", engine)
+path = "./data/wjazzd.db" # REPLACE THIS WITH PATH TO FILE
+engine = create_engine(f"sqlite:///{path}")
+beats = pd.read_sql("beats", engine)
+melody= pd.read_sql("melody", engine)
 
 
 #%%
@@ -264,9 +264,9 @@ def encode_chords_1(table):
         new_chord_map[c] = i
     table['new_chord_num'] = table['new_chord'].map(new_chord_map)
     
-    # a_file = open("models/new_chord_map.pkl", "wb")
-    # pickle.dump(new_chord_map, a_file)
-    # a_file.close()
+    a_file = open("models/new_chord_map.pkl", "wb")
+    pickle.dump(new_chord_map, a_file)
+    a_file.close()
 
     return table
 
@@ -403,6 +403,8 @@ def get_dataset5(melody, beats):
     
     beats = beats[['beatid', 'melid', 'bar', 'beat', 'chord', 'bass_pitch']]
 
+
+
     beats_mel = encode_melody(melody, beats, pitch_sequence=True)    
     beats_mel = preprocess_chords(beats_mel, mel_included = True)
     beats_mel = encode_chords_1(beats_mel)
@@ -457,6 +459,7 @@ def get_dataset_multi_hot(choice=1, val_split=0.1, test_split=0.1, seed=42):
     sequences = []          # store chord as multi-hot
     target_sequence = []    # store chord as one-hot
     num_mels = beats['melid'].max()
+    print(num_mels)
     melodies = []
     bass_pitch = []
 
@@ -503,12 +506,18 @@ def get_dataset_multi_hot(choice=1, val_split=0.1, test_split=0.1, seed=42):
 
 
             target_sequence.append(seq_one_hot)
-                
-        # convert to np array
+        else:
+            print('len(seq_pitch) = %d, for melid: %d' % (len(seq_pitch), i))
+            print(seq_pitch)
+            
+    # convert to np array
     sequences = np.array(sequences, dtype=object)
     target_sequence = np.array(target_sequence, dtype=object)
     melodies = np.array(melodies, dtype=object)
     bass_pitch = np.array(bass_pitch, dtype=object)
+
+    print(len(sequences))
+    print(len(target_sequence))
 
     # Split Train/Val/Test
     random_idxs = np.random.RandomState(seed=seed).permutation(len(sequences))    # this randomState has a localized effect, so the permutation will be the same always (and can use test set in load_model)

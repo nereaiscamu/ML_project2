@@ -90,9 +90,7 @@ def train(args):
         print('*** Dataset ' + str(args.dataset) + ' loaded from file ***')
     else:
         #train_dataset, val_dataset, test_dataset, input_size, target_size = get_dataset_multi_hot_new_encoding(choice=2)
-        print('Leave train.py')
         train_dataset, val_dataset, test_dataset, input_size, target_size = get_dataset_multi_hot(choice=args.dataset, seed=args.seed)
-        print('Returned to train.py')
 
     
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True) 
