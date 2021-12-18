@@ -5,10 +5,12 @@ import plotly.express as px
 import plotly.io as pio
 import pandas as pd
 import pdb 
+import matplotlib.pyplot as plt
+import seaborn as sn
 
 # Select model. !! Use according datset, hidden_dim, layers and seed !!
 model_path = 'models/trained_models/optimized_192_2_dataset_1.pth'
-model_name = '3hot_chords_only'
+model_name = 'result_analysis/3hot_chords_only'
 dataset = 1
 hidden_dim = 192
 layers = 2
@@ -18,12 +20,11 @@ song_list, song_length, song_accuracy, preds, targets = load_model(model_path, d
 
 #%%
 
-
 results_numbers = pd.DataFrame()
 results_numbers['Songs'] = song_list
 results_numbers['Song_Length'] = song_length
 results_numbers['Song_Accuracy'] = song_accuracy
-results_numbers['Test_sample_ID'] = range(1, 44)
+results_numbers['Test_sample_ID'] = range(44)
 
         
 #%%
@@ -53,8 +54,7 @@ correct_chords = lambda x: sum(x)/len(x)*100
 num_chords = lambda x: len(x)
 
 Acc_chord_idx = result_table.groupby(
-    by=["Chord_idx"]).agg({'Correct': [num_chords, 
-                                           correct_chords] }).reset_index()
+    by=["Chord_idx"]).agg({'Correct': [num_chords, correct_chords] }).reset_index()
 Acc_chord_idx.columns = ["_".join(x) for x in Acc_chord_idx.columns.ravel()]
 Acc_chord_idx = Acc_chord_idx.rename(columns={'Chord_idx_': 'Chord_idx', 'Correct_<lambda_0>': "Sample_Size", 
                                 'Correct_<lambda_1>': "Chord_Accuracy"})
@@ -77,8 +77,7 @@ Acc_chord_idx = Acc_chord_idx.loc[Acc_chord_idx['Sample_Size']>=15]
 # 1- Compute recall 
 
 Recall_Chords = result_table.groupby(
-    by=["Target_Chords"]).agg({'Correct': [num_chords, 
-                                           correct_chords] }).reset_index()
+    by=["Target_Chords"]).agg({'Correct': [num_chords, correct_chords] }).reset_index()
 Recall_Chords.columns = ["_".join(x) for x in Recall_Chords.columns.ravel()]
 Recall_Chords = Recall_Chords.rename(columns={'Target_Chords_': 'Target_Chords', 'Correct_<lambda_0>': "Sample_Size", 
                                 'Correct_<lambda_1>': "recall"})
@@ -97,11 +96,8 @@ Prediction_Chords = Prediction_Chords.rename(columns={'Pred_Chords_': 'Pred_Chor
 # F_score = 2*((precision*recall)/(precision+recall))
 
 F_score = Recall_Chords.merge(Prediction_Chords, left_on='Target_Chords', right_on='Pred_Chords')
-
-
 F_score = F_score.assign(f_score = 2*((F_score['recall'] * F_score['precision'])/(F_score['recall'] + F_score['precision'])))
 F_score['f_score'] = F_score['f_score'].replace(np.nan, 0)
-
 F_score = F_score.sort_values(by = 'f_score')
 
 #%% 
@@ -120,15 +116,12 @@ result_table['Previous_target'] = prev_chord
 
 Acc_chord_idx = Acc_chord_idx.sort_values(by = 'Chord_Accuracy')
 
-import matplotlib.pyplot as plt
-import seaborn as sn
 
 
 
 pio.renderers.default='browser'
 fig2 = px.scatter(result_table, x="Song_Length", y='Song_Accuracy')
-fig3 = px.scatter(Acc_chord_idx, x="Chord_idx", y='Chord_Accuracy', 
-                  size = 'Sample_Size')
+fig3 = px.scatter(Acc_chord_idx, x="Chord_idx", y='Chord_Accuracy', size = 'Sample_Size')
 fig4 = px.scatter(F_score, x = 'Target_Chords', y = 'f_score',
                   size="Sample_Size_x", hover_name="Target_Chords", size_max=60)
 
@@ -155,7 +148,7 @@ result_table.loc[ result_table['p_mod'] == 'b', "p_mod2"] = 'b'
 result_table.loc[ ~result_table['p_mod'].isin(mods_to_keep), 'p_mod2'] = ""
 result_table['p_root'] = result_table['p_root'].str.cat(result_table['p_mod2'])
 
-confusion_matrix = pd.crosstab(result_table['t_root'], result_table['p_root'], rownames=['Actual'], colnames=['Predicted'], 
+confusion_matrix = pd.crosstab(result_table['t_root'], result_table['p_root'], rownames=['Target'], colnames=['Predicted'], 
                                normalize='index').round(4)*100
 
 

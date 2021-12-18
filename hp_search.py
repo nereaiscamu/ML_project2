@@ -24,7 +24,6 @@ def grid_search():
     embed_sizes = [64, 96, 128, 192]
     layers = [1, 2, 3, 4]
 
-
     train_accs = np.empty((len(embed_sizes), len(layers)))
     val_accs = np.empty((len(embed_sizes), len(layers)))
     epochs_training = np.empty((len(embed_sizes), len(layers)))
