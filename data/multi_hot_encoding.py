@@ -204,7 +204,7 @@ def encode_pitch(df_melody, df_beats, pitch_sequence=False):
 
     ## Encode sequence of pitch for every chord
     # Add column that represent chord changes
-    df_beats_mel['chord_changed'] = (df_beats_mel['chord'].shift() != df_beats_mel["chord"]).cumsum()
+    df_beats_mel['chord_changed'] = (df_beats_mel['new_chord'].shift() != df_beats_mel["new_chord"]).cumsum()
 
     # Group chord changes to get sequences
     pitch_sequences = [g['pitch_encoded'].tolist() for k, g in df_beats_mel.groupby('chord_changed')]
@@ -212,7 +212,7 @@ def encode_pitch(df_melody, df_beats, pitch_sequence=False):
     duration_sequence = [g['duration'].tolist() for k, g in df_beats_mel.groupby('chord_changed')]
 
     # Identify last row of current chord
-    df_beats_mel['pitch_sequence'] = (df_beats_mel['chord'].shift(-1) != df_beats_mel["chord"])
+    df_beats_mel['pitch_sequence'] = (df_beats_mel['new_chord'].shift(-1) != df_beats_mel["new_chord"])
 
     # Change type to type object to add list to cell
     df_beats_mel['pitch_sequence'] = df_beats_mel['pitch_sequence'].astype(object)
@@ -408,8 +408,8 @@ def get_dataset5(melody, beats):
     beats = beats[['beatid', 'melid', 'bar', 'beat', 'chord', 'bass_pitch']]
 
     beats = preprocess_chords(beats, mel_included = True)
-    beats_mel = encode_pitch(melody, beats, pitch_sequence=True)    
     beats = encode_chords_1(beats)
+    beats_mel = encode_pitch(melody, beats, pitch_sequence=True)    
     
     
     unique_chords = pd.unique(beats_mel['new_chord'])
