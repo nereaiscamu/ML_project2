@@ -102,8 +102,10 @@ def train(args):
                             lstm_hidden_size=args.hidden_dim, 
                             target_size=target_size, 
                             num_layers=args.lstm_layers, 
+
                             dropout_linear=args.dropout, 
                             dropout_lstm=args.dropout)
+
     #model = LSTM_Multihot_MLP(input_size, embed_size=64, lstm_hidden_size=64, target_size=target_size, num_layers=2, dropout_linear=0.4, dropout_lstm=0.4)
     model = model.to(device)
 
@@ -296,6 +298,7 @@ if __name__ == "__main__":
     np.random.seed(42)
 
     parser = ArgumentParser(description='Train a model')
+
     parser.add_argument('--dataset', type=int, default=8)
     parser.add_argument('--hidden-dim', type=int, default=62)
     parser.add_argument('--lstm-layers', type=int, default=2)
@@ -306,6 +309,7 @@ if __name__ == "__main__":
     parser.add_argument('--wd', type=float, default=1e-4)
     parser.add_argument('--dropout', type=float, default=0.2)
     parser.add_argument('--use-saved-dataset', type=bool, default=False)
+
 
     parser.add_argument('--save-path', type=str,
                         #default=None,

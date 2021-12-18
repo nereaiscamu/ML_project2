@@ -32,6 +32,16 @@ chords_count_keep = chords_count[(chords_count >=10)]
 chords_count_discard = chords_count[(chords_count<10)]
 """
 
+# # Define new index with the key (melid, bar, beat)
+# new_index = ['melid', 'bar', 'beat']
+# df_chords_new = df_chords.set_index(new_index, drop=True)
+# df_melody_new = df_melody.set_index(new_index, drop=True)
+
+# # Concatenate the dataframes using the new index and then reset the index again
+# #df_beats_mel = pd.concat([df_melody_new, df_chords_new.reindex(df_melody_new.index)], axis=1)
+# df_beats_mel = df_chords_new.merge(df_melody_new, left_on=new_index, right_on=new_index, how='outer')
+# df_beats_mel = df_beats_mel.reset_index(drop=False)
+
 
 #%%  Dataset 1: Basic dataset with only root pitches. Vocab size = 13. One-hot
 
