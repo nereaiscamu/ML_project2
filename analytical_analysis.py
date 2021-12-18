@@ -7,10 +7,10 @@ import pandas as pd
 import pdb 
 
 # Select model. !! Use according datset, hidden_dim, layers and seed !!
-model_path = 'models/trained_models/model_name.pth'
+model_path = 'models/trained_models/optimized_192_2_dataset_1.pth'
 model_name = '3hot_chords_only'
-dataset = 2
-hidden_dim = 64
+dataset = 1
+hidden_dim = 192
 layers = 2
 seed = 42
 

@@ -20,7 +20,7 @@ import time
 
 
 def grid_search():
-    dataset = 1
+    dataset = 4
     embed_sizes = [64, 96, 128, 192]
     layers = [1, 2, 3, 4]
 

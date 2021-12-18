@@ -201,30 +201,23 @@ if __name__ == "__main__":
 
     parser = ArgumentParser(description='Train a model')
 
-    parser.add_argument('--dataset', type=int, default=2)
-    parser.add_argument('--hidden-dim', type=int, default=64)
+    parser.add_argument('--dataset', type=int, default=4)
+    parser.add_argument('--hidden-dim', type=int, default=192)
     parser.add_argument('--lstm-layers', type=int, default=2)
     parser.add_argument('--max-epochs', type=int, default=200)
     parser.add_argument('--early-stopping', type=int, default=15)
     parser.add_argument('--seed', type=int, default=42)
-    parser.add_argument('--lr', type=float, default=0.01)
-    parser.add_argument('--wd', type=float, default=1e-5)
-    parser.add_argument('--dropout', type=float, default=0.2)
+    parser.add_argument('--lr', type=float, default=0.007)
+    parser.add_argument('--wd', type=float, default=5e-6)
+    parser.add_argument('--dropout', type=float, default=0.25)
     parser.add_argument('--use-saved-dataset', type=bool, default=False)
 
 
     parser.add_argument('--save-path', type=str,
                         #default=None,
-                        default='models/trained_models/model_name.pth',
+                        default='models/trained_models/optimized_192_2_dataset_1.pth',
                         help='')
-    parser.add_argument('--load-path', type=str,
-                        #default=None,
-                        default='models/trained_models/model_name.pth',
-                        help='')
-            
+
     args = parser.parse_args()
 
-    if args.load_path is not None:
-        load_model(args.load_path, args.dataset)
-    else:
-        train(args)
+    train(args)
