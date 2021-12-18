@@ -65,12 +65,12 @@ def random_search():
 
     # select best grid search values
     embed_size = 192
-    layers = 4
+    layers = 2
 
     # define variables to perform random search
     n_runs = 20
     lr = np.logspace(start=-4, stop=-1.5, base=10, num=n_runs)  # log-spaced values between 1e-4 and 1e-(1.5)
-    weight_decay = np.logspace(start=-7, stop=-2, base=10, num=n_runs)   
+    weight_decay = np.logspace(start=-7, stop=-3, base=10, num=n_runs)   
     dropout = np.random.uniform(low=0, high=0.5, size=n_runs) 
 
     # random permutation
@@ -109,7 +109,7 @@ def random_search():
     print('\nBest Validation accuracy: %.2f\tLearning rate: %.5f\tWeight decay: %.8f\tDropout: %.2f' %(best_acc, lr[indx_best], wd[indx_best], dropout[indx_best]))
 
 
-def train(dataset=8, hidden_dim=64, layers=2, max_epochs=200, lr=0.01, wd=1e-4, dropout=0.2, early_stopping=15, seed=42):
+def train(dataset=8, hidden_dim=64, layers=2, max_epochs=200, lr=0.01, wd=1e-5, dropout=0.2, early_stopping=15, seed=42):
     np.random.seed(42)
     sys.argv = [sys.argv[0]]
 
@@ -133,7 +133,9 @@ def train(dataset=8, hidden_dim=64, layers=2, max_epochs=200, lr=0.01, wd=1e-4, 
     args.layers = layers
     return train_model(args)
 
+
 if __name__ == "__main__":
+
     if sys.argv[1] == 'grid':
         grid_search()
     elif sys.argv[1] == 'random':

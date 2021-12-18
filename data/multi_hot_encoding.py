@@ -15,6 +15,8 @@ import pdb
 import pickle
 import os
 import sys
+from data.combine_melody_beats import encode_pitch
+
 sys.path.append('../')
 
 path = "./data/wjazzd.db" # REPLACE THIS WITH PATH TO FILE
@@ -22,16 +24,8 @@ engine = create_engine(f"sqlite:///{path}")
 beats = pd.read_sql("beats", engine)
 melody= pd.read_sql("melody", engine)
 
-# beats['chord'].replace(-1, np.nan, inplace=True)
-# beats = beats.dropna()
 
-
-
-#%%
-
-### Here is the part to build the chord vocabulary
-
-
+# *************** CHORD ENCODING *******************
 
 def preprocess_chords(beats, mel_included = False):
     # Remove empty rows, if melody encoded, empty rows corresponds to -1
@@ -149,95 +143,6 @@ def preprocess_chords(beats, mel_included = False):
 
     return beats
 
-def concat_melody_beats3(df_melody, df_beats):
-    """
-    Uses the output of the preprocess_chords for mel_included = True
-
-    Args:
-        df_melody: Dataframe of the melody table
-        df_beats: Dataframe of the beats table (after preprocessing)
-
-    Returns:
-        Dataframe consisting of the combination of both tables
-    """
-    # Remove useless columns
-    df_melody = df_melody[['eventid', 'melid', 'pitch', 'duration', 'bar', 'beat']]
-
-    # Define new index with the key (melid, bar, beat)
-    new_index = ['melid', 'bar', 'beat']
-    df_chords_new = df_beats.set_index(new_index, drop=True)
-    df_melody_new = df_melody.set_index(new_index, drop=True)
-
-    # Concatenate the dataframes using the new index and then reset the index again
-    df_beats_mel = df_chords_new.merge(df_melody_new, left_on=new_index, right_on=new_index, how='left')
-    df_beats_mel = df_beats_mel.reset_index(drop=False)
-
-    return df_beats_mel
-
-def encode_pitch(df_melody, df_beats, pitch_sequence=False):
-    """
-    Encodes the pitches of the melody in combination with the beats.
-
-    Args:
-        df_melody: Dataframe of the melody table
-        df_beats: Dataframe of the beats table
-        pitch_sequence: Boolean to use pitch per chord (False) or sequence of chord (True) 
-
-    Returns:
-        Dataframe containing the encoded pitches
-    """
-
-    df_beats_mel = concat_melody_beats3(df_melody, df_beats)
-    
-    # Encode pitch
-    df_beats_mel['pitch_encoded'] = np.mod(df_beats_mel['pitch'], 12)
-    df_beats_mel['bass_pitch_encoded'] = np.mod(df_beats_mel['bass_pitch'], 12)
-
-    df_beats_mel.fillna(-1, inplace=True)
-    df_beats_mel['pitch_encoded'] = df_beats_mel['pitch_encoded'].astype(int)
-    max_pitch = df_beats_mel['pitch_encoded'].max()
-    df_beats_mel['bass_pitch_encoded'] = df_beats_mel['bass_pitch_encoded'].astype(int)
-    df_beats_mel['duration'] = df_beats_mel['duration'].round(4)
-
-    ## Encode pitch for every chord of melody
-    if not pitch_sequence:
-        return df_beats_mel
-
-    ## Encode sequence of pitch for every chord
-    # Add column that represent chord changes
-    df_beats_mel['chord_changed'] = (df_beats_mel['new_chord'].shift() != df_beats_mel["new_chord"]).cumsum()
-
-    # Group chord changes to get sequences
-    pitch_sequences = [g['pitch_encoded'].tolist() for k, g in df_beats_mel.groupby('chord_changed')]
-    bass_pitch_sequences = [g['bass_pitch_encoded'].tolist() for k, g in df_beats_mel.groupby('chord_changed')]
-    duration_sequence = [g['duration'].tolist() for k, g in df_beats_mel.groupby('chord_changed')]
-
-    # Identify last row of current chord
-    df_beats_mel['pitch_sequence'] = (df_beats_mel['new_chord'].shift(-1) != df_beats_mel["new_chord"])
-
-    # Change type to type object to add list to cell
-    df_beats_mel['pitch_sequence'] = df_beats_mel['pitch_sequence'].astype(object)
-    df_beats_mel['bass_pitch_sequence'] = df_beats_mel['pitch_sequence']
-    df_beats_mel['duration_sequence'] = df_beats_mel['pitch_sequence']
-
-    # Set sequence to last chord
-    # TODO decrease running time if possible
-    for idx, _ in df_beats_mel.iterrows():
-        if df_beats_mel.at[idx, 'pitch_sequence'] == True:
-            df_beats_mel.at[idx, 'pitch_sequence'] = pitch_sequences.pop(0)
-            df_beats_mel.at[idx, 'bass_pitch_sequence'] = bass_pitch_sequences.pop(0)
-            df_beats_mel.at[idx, 'duration_sequence'] = duration_sequence.pop(0)
-
-    # melody_encoded = [np.zeros(max_pitch) for _ in range(len(df_beats_mel))]
-    # df_beats_mel['melody_encoded'] = melody_encoded
-    df_beats_mel.drop(['bass_pitch_encoded', 'chord_changed'], axis=1, inplace=True)
-    df_beats_mel.drop(df_beats_mel[df_beats_mel['pitch_sequence'] == False].index, inplace=True)
-
-    return df_beats_mel
-
-
-#%%
-
 def encode_chords_1(table):
     unique_chords = pd.unique(table['new_chord'])
     unique_pitch = pd.unique(table['Root_pitch'])
@@ -303,17 +208,15 @@ def encode_chords_2(table):
     return table
 
 
-
-#%% 
-
-''' Defining datasets '''
+# *************** DATASETS ONLY CHORD ENCODING *******************
 
 def get_dataset_only_chord_1(beats):
     '''
-    Dataset 2: Multi-hot. Combination of 3 One-Hot vectors:
-        (1): Root pitch and '#'. Vocab size = 13
+    Dataset 1: Multi-hot. Combination of 3 One-Hot vectors:
+        (1): Root pitch and '#'. Vocab size = 12
         (2): triad. Vocab size = 6
-        (3): Extra note. Vocab size = 4
+        (3): Extra note. Vocab size = 5
+    Total: 156 unique chords
     '''
     #beats['chord'].replace('', np.nan, inplace=True)
     beats = beats[['beatid', 'melid', 'chord', 'bar', 'beat', 'bass_pitch']]
@@ -338,8 +241,9 @@ def get_dataset_only_chord_1(beats):
 def get_dataset_only_chord_2(beats):
     '''
     Dataset 2: Multi-hot. Combination of 3 One-Hot vectors:
-        (1): Root pitch and '#'. Vocab size = 13
-        (2): Chord info. Vocab size = 14
+        (1): Root pitch and '#'. Vocab size = 12
+        (2): Chord info. Vocab size = 16
+    Total: 156 unique chords
     '''
     # beats['chord'].replace('', np.nan, inplace=True)
     beats = beats[['beatid', 'melid', 'chord']]
@@ -361,8 +265,7 @@ def get_dataset_only_chord_2(beats):
     return beats, vocab_sizes, target_size
 
 
-
-
+# *************** DATASETS CHORD + MELODY/BASS ENCODING *******************
 
 def get_dataset4(melody, beats):
     """
@@ -395,7 +298,6 @@ def get_dataset4(melody, beats):
     print('\t(4): Melody pitch. Vocab size of %d\n' % len(unique_notes))
 
     return mel_beats, vocab_sizes, target_size
-
 
 def get_dataset5(melody, beats):
     """
@@ -434,17 +336,20 @@ def get_dataset5(melody, beats):
     return beats_mel, vocab_sizes, target_size
 
 
+# *************** DATASETS -- ALL COMBINATIONS *******************
+
 def get_dataset_multi_hot(choice=1, val_split=0.1, test_split=0.1, seed=42):
     '''
     Generate train and test dataset. Based on dataset choice
     choice:
-        2: Multi-hot chord encoding
-        3: Multi-hot chord encoding + melody encoding (event for every note)
-        4: Multi-hot chord encoding + melody encoding (notes encoding combined)
-        5: Multi-hot chord encoding + bass pitch encoding
-        6: Multi-hot chord encoding + melody encoding & bass pitch encoding
-        7: Multi-hot chord encoding + melody encoding with weighted duration
-        8: Multi-hot chord encoding + weighted melody encoding
+        1: Multi-hot chord encoding (12+6+5)
+        2: Multi-hot chord encoding (12+16)
+        3: Multi-hot chord encoding (12+6+5) + melody encoding (event for every note)
+        4: Multi-hot chord encoding (12+6+5) + melody encoding (notes encoding combined)
+        5: Multi-hot chord encoding (12+6+5) + bass pitch encoding
+        6: Multi-hot chord encoding (12+6+5) + melody encoding & bass pitch encoding
+        7: Multi-hot chord encoding (12+6+5) + melody encoding with weighted duration
+        8: Multi-hot chord encoding (12+6+5) + weighted melody encoding
     '''
 
     path = "./data/wjazzd.db" # REPLACE THIS WITH PATH TO FILE
@@ -533,6 +438,12 @@ def get_dataset_multi_hot(choice=1, val_split=0.1, test_split=0.1, seed=42):
     val_target_seq = target_sequence[val_idxs]
     test_target_seq = target_sequence[test_idxs]
 
+    if choice == 1 or choice == 2:
+        train_dataset = MultiHot_VLDataset(train_seq, train_target_seq, vocab_sizes)
+        val_dataset = MultiHot_VLDataset(val_seq, val_target_seq, vocab_sizes)
+        test_dataset = MultiHot_VLDataset(test_seq, test_target_seq, vocab_sizes)
+        input_size = sum(vocab_sizes)
+
     if choice == 4:
         train_mel = melodies[train_idxs]
         val_mel = melodies[val_idxs]
@@ -542,13 +453,6 @@ def get_dataset_multi_hot(choice=1, val_split=0.1, test_split=0.1, seed=42):
         test_dataset = MultiHot_MelodyEncoded_VLDataset(test_seq, test_mel, test_target_seq, vocab_sizes)
         input_size = sum(vocab_sizes) + 12
 
-        # save datasets
-        data = (train_dataset, val_dataset, test_dataset, input_size, target_size)
-        with open('data/datasets/dataset4.pickle', 'wb') as f:
-            pickle.dump(data, f)
-
-        return train_dataset, val_dataset, test_dataset, input_size, target_size
-
     if choice == 5:
         train_bass = bass_pitch[train_idxs]
         val_bass = bass_pitch[val_idxs]
@@ -557,7 +461,6 @@ def get_dataset_multi_hot(choice=1, val_split=0.1, test_split=0.1, seed=42):
         val_dataset = MultiHot_MelodyEncoded_VLDataset(val_seq, val_bass, val_target_seq, vocab_sizes)
         test_dataset = MultiHot_MelodyEncoded_VLDataset(test_seq, test_bass, test_target_seq, vocab_sizes)
         input_size = sum(vocab_sizes) + 12
-        return train_dataset, val_dataset, test_dataset, input_size, target_size
 
     if choice == 6:
         train_mel = melodies[train_idxs]
@@ -570,7 +473,6 @@ def get_dataset_multi_hot(choice=1, val_split=0.1, test_split=0.1, seed=42):
         val_dataset = MultiHot_MelodyBassEncoded_VLDataset(val_seq, val_mel, val_bass, val_target_seq, vocab_sizes)
         test_dataset = MultiHot_MelodyBassEncoded_VLDataset(test_seq, test_mel, test_bass, test_target_seq, vocab_sizes)
         input_size = sum(vocab_sizes) + 12 + 12
-        return train_dataset, val_dataset, test_dataset, input_size, target_size
 
     if choice == 7:
         train_mel = melodies[train_idxs]
@@ -580,7 +482,6 @@ def get_dataset_multi_hot(choice=1, val_split=0.1, test_split=0.1, seed=42):
         val_dataset = MultiHot_MelodyDurationEncoded_VLDataset(val_seq, val_mel, val_target_seq, vocab_sizes)
         test_dataset = MultiHot_MelodyDurationEncoded_VLDataset(test_seq, test_mel, test_target_seq, vocab_sizes)
         input_size = sum(vocab_sizes) + 12
-        return train_dataset, val_dataset, test_dataset, input_size, target_size
 
     if choice == 8:
         train_mel = melodies[train_idxs]
@@ -590,18 +491,10 @@ def get_dataset_multi_hot(choice=1, val_split=0.1, test_split=0.1, seed=42):
         val_dataset = MultiHot_MelodyWeighted_VLDataset(val_seq, val_mel, val_target_seq, vocab_sizes)
         test_dataset = MultiHot_MelodyWeighted_VLDataset(test_seq, test_mel, test_target_seq, vocab_sizes)
         input_size = sum(vocab_sizes) + 12
-        return train_dataset, val_dataset, test_dataset, input_size, target_size
 
-    train_dataset = MultiHot_VLDataset(train_seq, train_target_seq, vocab_sizes)
-    val_dataset = MultiHot_VLDataset(val_seq, val_target_seq, vocab_sizes)
-    test_dataset = MultiHot_VLDataset(test_seq, test_target_seq, vocab_sizes)
-
-    input_size = sum(vocab_sizes)
-
-
-    # save datasets
+    # save dataset
     data = (train_dataset, val_dataset, test_dataset, input_size, target_size)
-    with open('data/datasets/dataset1.pickle', 'wb') as f:
+    with open('data/datasets/dataset' + str(choice) + '.pickle', 'wb') as f:
         pickle.dump(data, f)
 
     return train_dataset, val_dataset, test_dataset, input_size, target_size
@@ -719,6 +612,3 @@ def get_dataset_multi_hot_without_split(choice=1, test_split=0.1):
 
     input_size = sum(vocab_sizes)
     return dataset, input_size, target_size
-
-# if __name__ == "__main__":
-#     get_dataset_multi_hot(choice=1)

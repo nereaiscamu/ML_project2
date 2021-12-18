@@ -1,31 +1,23 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Sun Dec 12 16:05:52 2021
-
-@author: nerea
-"""
-
-#%% Load Models
 from argparse import ArgumentParser
-from train import load_model
+from load_model import load_model
 import numpy as np
 import plotly.express as px
 import plotly.io as pio
+import pandas as pd
+import pdb 
 
-model_path = 'models/trained_models/model_trained_nerea.pth'
+# Select model. !! Use according datset, hidden_dim, layers and seed !!
+model_path = 'models/trained_models/model_name.pth'
 model_name = '3hot_chords_only'
+dataset = 2
+hidden_dim = 64
+layers = 2
+seed = 42
 
-parser = ArgumentParser(description='Train a model')
-parser.add_argument('--load-path', type=str,
-                    default= model_path,
-                    help='')
-
-args = parser.parse_args()
-song_list, song_length, song_accuracy, preds, targets = load_model(args.load_path)
+song_list, song_length, song_accuracy, preds, targets = load_model(model_path, dataset, hidden_dim, layers, seed)
 
 #%%
-        
-import pandas as pd
+
 
 results_numbers = pd.DataFrame()
 results_numbers['Songs'] = song_list
