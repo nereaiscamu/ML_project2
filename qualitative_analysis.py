@@ -7,6 +7,7 @@ import pandas as pd
 import pdb 
 import matplotlib.pyplot as plt
 import seaborn as sn
+from multi_hot_encoding import get_dataset_multi_hot
 
 # Select model. !! Use according datset, hidden_dim, layers and seed !!
 model_path = 'models/trained_models/optimized_192_2_dataset_1.pth'
@@ -15,6 +16,9 @@ dataset = 1
 hidden_dim = 192
 layers = 2
 seed = 42
+
+train_dataset, val_dataset, test_dataset, input_size, target_size= get_dataset_multi_hot(choice=1, val_split=0.1, test_split=0.1, seed=42)
+#%%
 
 song_list, song_length, song_accuracy, preds, targets = load_model(model_path, dataset, hidden_dim, layers, seed)
 
@@ -129,7 +133,7 @@ fig2.show()
 fig3.show()
 fig4.show()
 
-#%%
+#%% Root pitch
 
 result_table = result_table.assign(t_root = result_table['Target_Chords'].str.slice(stop=1))
 result_table = result_table.assign(p_root = result_table['Pred_Chords'].str.slice(stop=1))
@@ -143,21 +147,126 @@ result_table.loc[ result_table['t_mod'] == '#', "t_mod2"] = '#'
 result_table.loc[ result_table['t_mod'] == 'b', "t_mod2"] = 'b'
 result_table.loc[ ~result_table['t_mod'].isin(mods_to_keep), 't_mod2'] = ""
 result_table['t_root'] = result_table['t_root'].str.cat(result_table['t_mod2'])
+
 result_table.loc[ result_table['p_mod'] == '#', "p_mod2"] = '#'
 result_table.loc[ result_table['p_mod'] == 'b', "p_mod2"] = 'b'
 result_table.loc[ ~result_table['p_mod'].isin(mods_to_keep), 'p_mod2'] = ""
 result_table['p_root'] = result_table['p_root'].str.cat(result_table['p_mod2'])
 
-confusion_matrix = pd.crosstab(result_table['t_root'], result_table['p_root'], rownames=['Target'], colnames=['Predicted'], 
+
+
+#%%
+
+''' TRIAD VECTOR '''
+
+def triad_vector(df, var, mod_vector, chord_info_name, triad_var, triad_var_corr, t_root, p_root ):
+    
+    df.loc[ ~df[mod_vector].isin(mods_to_keep), chord_info_name] = df[var].str.slice(start = 1)
+    df.loc[ df[mod_vector].isin(mods_to_keep), chord_info_name] = df[var].str.slice(start = 2)
+        
+    df[triad_var] = 'M'    #initialise the triad form to major
+    modes = ['o', '-', '+', 'sus'] #define other forms
+    
+    
+    for i in modes:
+        df.loc[df[var].str.contains(i, regex = False) == True, 
+                  triad_var ] = i #fill the triad variable with the information in the chord mapping
+    
+    df.loc[df[var].str.contains('7b5', regex = False) == True, 
+              triad_var ] = 'half' #Add the half-diminished form, only for 7b5 chords
+    
+    df[triad_var_corr] = df[triad_var]
+    df.loc[ df[t_root] != df[p_root] , triad_var_corr] = 'wrong_root'
+
+    return df
+
+
+result_table = triad_vector(result_table, 'Target_Chords', 't_mod', 
+                            'chord_info_T', 'triad_T', 'triad_T_corr', 
+                            't_root', 'p_root' )
+    
+result_table = triad_vector(result_table, 'Pred_Chords', 'p_mod', 
+                            'chord_info_P', 'triad_P', 'triad_P_corr', 
+                            't_root', 'p_root' ) 
+   
+total_mode_T = pd.unique(result_table['triad_T'])
+total_mode_P = pd.unique(result_table['triad_P'])
+
+#%%
+
+
+''' ADDED NOTE VECTOR '''
+
+def added_note_vector(df, var, added_note_var, added_note_var_cor,t_root, p_root ):   
+    df[added_note_var] = df[var]
+
+    
+    #remove all information which is already in the triad form vector 
+    # (7alt --> mapped to 7)
+    remove_note_info = ['-', '+', 'sus',  'b5', 'alt'] 
+    for i in remove_note_info:
+        df[added_note_var] = df[added_note_var].str.replace(i,'')
+    
+    # in the added note, diminished is only kept when it affects the 7th note
+    # if only for the triad, already in the previous vector
+    df.loc[ df[added_note_var] == 'o', added_note_var] = ''
+    df.loc[ df[added_note_var] == '7', added_note_var] = 'm7'
+    df.loc[df[added_note_var] == '', added_note_var] = 'none'
+    
+    df[added_note_var_cor] = df[added_note_var]
+    df.loc[ df[t_root] != df[p_root] , added_note_var_cor] = 'wrong_root'
+    
+    return df
+    
+
+result_table = added_note_vector(result_table, 'chord_info_T', 'added_note_T', 'added_note_T_corr',
+                                 't_root', 'p_root')
+
+result_table = added_note_vector(result_table, 'chord_info_P', 'added_note_P', 'added_note_P_corr',
+                                 't_root', 'p_root')
+
+total_added_note = pd.unique(result_table['added_note_T'])
+
+
+#%%
+
+def create_save_matrix(matrix, name, model_name):
+    matrix_fig = sn.heatmap(matrix, annot=True)
+    plt.show()
+    
+    plot_name = name
+    
+    savepath = str(model_name) + str( plot_name)
+    
+    figure = matrix_fig.get_figure()    
+    figure.savefig(savepath, dpi=400)
+    
+
+confusion_matrix_root = pd.crosstab(result_table['t_root'], result_table['p_root'], rownames=['Target'], colnames=['Predicted'], 
+                               normalize='index').round(4)*100
+  
+confusion_matrix_triad = pd.crosstab(result_table['triad_P'], result_table['triad_P_corr'], rownames=['Target Triad Form'], colnames=['Predicted Triad Form'], 
                                normalize='index').round(4)*100
 
+confusion_matrix_added_note = pd.crosstab(result_table['added_note_T'], result_table['added_note_P_corr'], rownames=['Target Added Note'], colnames=['Predicted Added Note'], 
+                               normalize='index').round(4)*100
+    
+create_save_matrix(confusion_matrix_root,  '_roots_crossmatrix.png', model_name)
 
-matrix_fig = sn.heatmap(confusion_matrix, annot=True)
-plt.show()
+create_save_matrix(confusion_matrix_triad,  '_triad_crossmatrix.png', model_name)
 
-plot_name = '_roots_crossmatrix.png'
+create_save_matrix(confusion_matrix_added_note,  '_addednote_crossmatrix.png', model_name)
 
-savepath = str(model_name) + str( plot_name)
+#%%
+import pickle
 
-figure = matrix_fig.get_figure()    
-figure.savefig(savepath, dpi=400)
+choice = 1
+
+with open('./data/datasets/dataset' + str(choice) + '.pickle', 'rb') as f:
+    (train_dataset, val_dataset, test_dataset, input_size, target_size) = pickle.load(f)
+print('*** Dataset ' + str(choice) + ' loaded from file ***')
+
+
+''' preguntar dani d'on trec el training dataset'''
+
+
