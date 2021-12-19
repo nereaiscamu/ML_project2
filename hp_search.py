@@ -20,8 +20,9 @@ import time
 
 
 def grid_search():
-    dataset = 4
-    embed_sizes = [64, 96, 128, 192]
+    dataset = 8
+    #embed_sizes = [64, 96, 128, 192]
+    embed_sizes = [128, 192]
     layers = [1, 2, 3, 4]
 
     train_accs = np.empty((len(embed_sizes), len(layers)))
@@ -60,7 +61,7 @@ def grid_search():
 
 def random_search():
     # choose dataset
-    dataset = 1
+    dataset = 8
 
     # select best grid search values
     embed_size = 192
