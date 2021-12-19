@@ -1,0 +1,6 @@
+Random search results for	Dataset: 8	Embed dim: 192	Layers: 2
+Learning rate: 0.00045	Weight decay: 0.00061585	Dropout: 0.37	Train acc: 43.84	Val acc: 38.58	Epochs: 199
+Learning rate: 0.02336	Weight decay: 0.00000785	Dropout: 0.19	Train acc: 92.07	Val acc: 61.58	Epochs: 74
+Learning rate: 0.00014	Weight decay: 0.00000113	Dropout: 0.08	Train acc: 10.08	Val acc: 8.48	Epochs: 199
+Learning rate: 0.00083	Weight decay: 0.00000070	Dropout: 0.42	Train acc: 57.69	Val acc: 51.72	Epochs: 199
+Learning rate: 0.00010	Weight decay: 0.00003360	Dropout: 0.01	Train acc: 7.28	Val acc: 5.82	Epochs: 93

@@ -10,34 +10,34 @@ import seaborn as sn
 from multi_hot_encoding import get_dataset_multi_hot
 
 # Select model. !! Use according datset, hidden_dim, layers and seed !!
-model_path = 'models/trained_models/optimized_192_2_dataset_4.pth'
+model_path = 'models/trained_models/optimized_192_2_dataset_1.pth'
 model_name = 'result_analysis/3hot_chords_only'
-dataset = 4
+dataset = 1
 hidden_dim = 192
 layers = 2
 seed = 42
 
-train_dataset, val_dataset, test_dataset, input_size, target_size= get_dataset_multi_hot(choice=1, val_split=0.1, test_split=0.1, seed=42)
-#%%
+# Whether or not to generate the root pitch confusion matrix for all individial songs
+do_conf_matrix_all_songs = False
 
+# Load data
+train_dataset, val_dataset, test_dataset, input_size, target_size= get_dataset_multi_hot(choice=1, val_split=0.1, test_split=0.1, seed=42)
+
+# Load model
 song_list, song_length, song_accuracy, preds, targets = load_model(model_path, dataset, hidden_dim, layers, seed)
 
-#%%
-
+# Create results table
 results_numbers = pd.DataFrame()
 results_numbers['Songs'] = song_list
 results_numbers['Song_Length'] = song_length
 results_numbers['Song_Accuracy'] = song_accuracy
 results_numbers['Test_sample_ID'] = range(44)
 
-        
-#%%
-
 result_table = pd.DataFrame(columns=['Test_sample_ID', 'Target_Chords', 'Pred_Chords'])
 
 for i, j  in enumerate (targets):
     result_song = pd.DataFrame()
-    result_song['Test_sample_ID'] = np.repeat(i, len(j))
+    result_song['Test_sample_ID'] = np.repeat(i-1, len(j))
     result_song['Chord_idx'] = range(1, len(j)+1)
     result_song['Target_Chords'] = j
     result_song['Pred_Chords'] = preds[i]
@@ -45,10 +45,7 @@ for i, j  in enumerate (targets):
     
     
 result_table = result_table.merge(results_numbers, left_on='Test_sample_ID', right_on='Test_sample_ID')
-
-
 chord_list = pd.unique(result_table['Target_Chords'])
-
 result_table.loc[result_table['Target_Chords'] == result_table['Pred_Chords'], 'Correct'] = 1
 result_table.loc[result_table['Target_Chords'] != result_table['Pred_Chords'], 'Correct'] = 0
 
@@ -88,7 +85,6 @@ Recall_Chords = Recall_Chords.rename(columns={'Target_Chords_': 'Target_Chords',
 
 # 2- Compute prediction 
 
-
 Prediction_Chords = result_table.groupby(
     by=["Pred_Chords"]).agg({'Correct': [num_chords, correct_chords] }).reset_index()
 Prediction_Chords.columns = ["_".join(x) for x in Prediction_Chords.columns.ravel()]
@@ -116,13 +112,7 @@ result_table['Previous_target'] = prev_chord
 
 #%% Make plots
 # x and y given as array_like objects
-
-
 Acc_chord_idx = Acc_chord_idx.sort_values(by = 'Chord_Accuracy')
-
-
-
-
 pio.renderers.default='browser'
 fig2 = px.scatter(result_table, x="Song_Length", y='Song_Accuracy')
 fig3 = px.scatter(Acc_chord_idx, x="Chord_idx", y='Chord_Accuracy', size = 'Sample_Size')
@@ -135,23 +125,48 @@ fig4.show()
 
 #%% Root pitch
 
-result_table = result_table.assign(t_root = result_table['Target_Chords'].str.slice(stop=1))
-result_table = result_table.assign(p_root = result_table['Pred_Chords'].str.slice(stop=1))
 
-result_table = result_table.assign(t_mod = result_table['Target_Chords'].str.slice(start = 1, stop = 2))
-result_table = result_table.assign(p_mod = result_table['Pred_Chords'].str.slice(start = 1, stop = 2))
-mods_to_keep = ['#', 'b']
-result_table['t_mod2'] = 0
-result_table['p_mod2'] = 0
-result_table.loc[ result_table['t_mod'] == '#', "t_mod2"] = '#'
-result_table.loc[ result_table['t_mod'] == 'b', "t_mod2"] = 'b'
-result_table.loc[ ~result_table['t_mod'].isin(mods_to_keep), 't_mod2'] = ""
-result_table['t_root'] = result_table['t_root'].str.cat(result_table['t_mod2'])
+def root_pitch_confussion_matrix(df):
+    df = df.assign(t_root = df['Target_Chords'].str.slice(stop=1))
+    df = df.assign(p_root = df['Pred_Chords'].str.slice(stop=1))
 
-result_table.loc[ result_table['p_mod'] == '#', "p_mod2"] = '#'
-result_table.loc[ result_table['p_mod'] == 'b', "p_mod2"] = 'b'
-result_table.loc[ ~result_table['p_mod'].isin(mods_to_keep), 'p_mod2'] = ""
-result_table['p_root'] = result_table['p_root'].str.cat(result_table['p_mod2'])
+    df = df.assign(t_mod = df['Target_Chords'].str.slice(start = 1, stop = 2))
+    df = df.assign(p_mod = df['Pred_Chords'].str.slice(start = 1, stop = 2))
+    mods_to_keep = ['#', 'b']
+    df['t_mod2'] = 0
+    df['p_mod2'] = 0
+    df.loc[ df['t_mod'] == '#', "t_mod2"] = '#'
+    df.loc[ df['t_mod'] == 'b', "t_mod2"] = 'b'
+    df.loc[ ~df['t_mod'].isin(mods_to_keep), 't_mod2'] = ""
+    df['t_root'] = df['t_root'].str.cat(df['t_mod2'])
+
+    df.loc[ df['p_mod'] == '#', "p_mod2"] = '#'
+    df.loc[ df['p_mod'] == 'b', "p_mod2"] = 'b'
+    df.loc[ ~df['p_mod'].isin(mods_to_keep), 'p_mod2'] = ""
+    df['p_root'] = df['p_root'].str.cat(df['p_mod2'])
+    return df
+
+def create_save_matrix(matrix, plot_name, model_name, title=None, show=True):
+    matrix_fig = sn.heatmap(matrix, annot=True)
+    plt.title(title)
+    if show:
+        plt.show()
+    else:
+        plt.show(block=False)
+        plt.close('all')
+    
+    savepath = str(model_name) + str(plot_name)
+    figure = matrix_fig.get_figure()    
+    figure.savefig(savepath, dpi=400)
+
+if do_conf_matrix_all_songs:
+    for i in result_table['Test_sample_ID'].unique():
+        song_df = root_pitch_confussion_matrix(result_table[result_table['Test_sample_ID'] == i])
+        confusion_matrix_root = pd.crosstab(song_df['t_root'], song_df['p_root'], rownames=['Target'], colnames=['Predicted'], normalize='all').round(4)*100
+        title = 'Song test ID ' + str(i) + '. Length: ' + str(results_numbers.at[i, 'Song_Length']) + ' Acc: ' + str(results_numbers.at[i, 'Song_Accuracy'])
+        create_save_matrix(confusion_matrix_root,  'roots_crossmatrix_song_' + str(i) + '.png', 'result_analysis/all_songs/', title=title, show=False)
+
+result_table = root_pitch_confussion_matrix(result_table)
 
 
 
@@ -160,7 +175,7 @@ result_table['p_root'] = result_table['p_root'].str.cat(result_table['p_mod2'])
 ''' TRIAD VECTOR '''
 
 def triad_vector(df, var, mod_vector, chord_info_name, triad_var, triad_var_corr, t_root, p_root ):
-    
+    mods_to_keep = ['#', 'b']
     df.loc[ ~df[mod_vector].isin(mods_to_keep), chord_info_name] = df[var].str.slice(start = 1)
     df.loc[ df[mod_vector].isin(mods_to_keep), chord_info_name] = df[var].str.slice(start = 2)
         
@@ -228,16 +243,7 @@ result_table = added_note_vector(result_table, 'chord_info_P', 'added_note_P', '
 total_added_note = pd.unique(result_table['added_note_T'])
 
 
-#%%
-
-def create_save_matrix(matrix, plot_name, model_name):
-    matrix_fig = sn.heatmap(matrix, annot=True)
-    plt.show()
-    
-    savepath = str(model_name) + str(plot_name)
-    figure = matrix_fig.get_figure()    
-    figure.savefig(savepath, dpi=400)
-    
+#%% 
 
 confusion_matrix_root = pd.crosstab(result_table['t_root'], result_table['p_root'], rownames=['Target'], colnames=['Predicted'], 
                                normalize='all').round(4)*100
