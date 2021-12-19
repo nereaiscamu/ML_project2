@@ -92,7 +92,7 @@ def train(args):
         train_dataset, val_dataset, test_dataset, input_size, target_size = get_dataset_multi_hot(choice=args.dataset, seed=args.seed)
     
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True) 
-
+    
     # Create model
     #model = LSTMChord(vocab_size, lstm_hidden_size=16)
     #model = LSTMChordEmbedding(vocab_size, embed_size=16, lstm_hidden_size=16)
@@ -201,7 +201,7 @@ if __name__ == "__main__":
 
     parser = ArgumentParser(description='Train a model')
 
-    parser.add_argument('--dataset', type=int, default=4)
+    parser.add_argument('--dataset', type=int, default=5)
     parser.add_argument('--hidden-dim', type=int, default=192)
     parser.add_argument('--lstm-layers', type=int, default=2)
     parser.add_argument('--max-epochs', type=int, default=200)
@@ -209,13 +209,13 @@ if __name__ == "__main__":
     parser.add_argument('--seed', type=int, default=42)
     parser.add_argument('--lr', type=float, default=0.007)
     parser.add_argument('--wd', type=float, default=5e-6)
-    parser.add_argument('--dropout', type=float, default=0.25)
+    parser.add_argument('--dropout', type=float, default=0.26)
     parser.add_argument('--use-saved-dataset', type=bool, default=False)
 
 
     parser.add_argument('--save-path', type=str,
                         #default=None,
-                        default='models/trained_models/optimized_192_2_dataset_1.pth',
+                        default='models/trained_models/optimized_192_2_dataset_5.pth',
                         help='')
 
     args = parser.parse_args()

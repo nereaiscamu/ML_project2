@@ -10,9 +10,9 @@ import seaborn as sn
 from multi_hot_encoding import get_dataset_multi_hot
 
 # Select model. !! Use according datset, hidden_dim, layers and seed !!
-model_path = 'models/trained_models/optimized_192_2_dataset_1.pth'
+model_path = 'models/trained_models/optimized_192_2_dataset_4.pth'
 model_name = 'result_analysis/3hot_chords_only'
-dataset = 1
+dataset = 4
 hidden_dim = 192
 layers = 2
 seed = 42
@@ -230,26 +230,23 @@ total_added_note = pd.unique(result_table['added_note_T'])
 
 #%%
 
-def create_save_matrix(matrix, name, model_name):
+def create_save_matrix(matrix, plot_name, model_name):
     matrix_fig = sn.heatmap(matrix, annot=True)
     plt.show()
     
-    plot_name = name
-    
-    savepath = str(model_name) + str( plot_name)
-    
+    savepath = str(model_name) + str(plot_name)
     figure = matrix_fig.get_figure()    
     figure.savefig(savepath, dpi=400)
     
 
 confusion_matrix_root = pd.crosstab(result_table['t_root'], result_table['p_root'], rownames=['Target'], colnames=['Predicted'], 
-                               normalize='index').round(4)*100
+                               normalize='all').round(4)*100
   
 confusion_matrix_triad = pd.crosstab(result_table['triad_P'], result_table['triad_P_corr'], rownames=['Target Triad Form'], colnames=['Predicted Triad Form'], 
-                               normalize='index').round(4)*100
+                               normalize='all').round(4)*100
 
 confusion_matrix_added_note = pd.crosstab(result_table['added_note_T'], result_table['added_note_P_corr'], rownames=['Target Added Note'], colnames=['Predicted Added Note'], 
-                               normalize='index').round(4)*100
+                               normalize='all').round(4)*100
     
 create_save_matrix(confusion_matrix_root,  '_roots_crossmatrix.png', model_name)
 
@@ -257,16 +254,5 @@ create_save_matrix(confusion_matrix_triad,  '_triad_crossmatrix.png', model_name
 
 create_save_matrix(confusion_matrix_added_note,  '_addednote_crossmatrix.png', model_name)
 
-#%%
-import pickle
-
-choice = 1
-
-with open('./data/datasets/dataset' + str(choice) + '.pickle', 'rb') as f:
-    (train_dataset, val_dataset, test_dataset, input_size, target_size) = pickle.load(f)
-print('*** Dataset ' + str(choice) + ' loaded from file ***')
-
-
-''' preguntar dani d'on trec el training dataset'''
 
 

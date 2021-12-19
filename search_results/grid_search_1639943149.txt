@@ -1,0 +1,3 @@
+Grid search results:
+Dataset 8	Embed dim: 128	Layers: 1	Train acc: 82.83	Val acc: 58.44	Epochs: 64
+Dataset 8	Embed dim: 192	Layers: 1	Train acc: 91.00	Val acc: 60.31	Epochs: 55

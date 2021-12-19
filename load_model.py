@@ -79,33 +79,36 @@ def load_model(load_path, dataset, hidden_dim, layers, seed=42):
     
 
     # Qualitative study of ONE SONG
-    print('\nTest dataset of length %d. Enter the index of a sample:' % len(test_dataset))
-    input_ = input()
-    sample_id = int(input_)
-    assert sample_id < len(test_dataset) and sample_id >= 0, 'Invalid sample index'
+    while True:
+        print('\nTest dataset of length %d. Enter the index of a sample, or \'enter\' to skip :' % len(test_dataset))
+        input_ = input()
+        if input_ == '':
+            break
+        sample_id = int(input_)
+        assert sample_id < len(test_dataset) and sample_id >= 0, 'Invalid sample index'
 
-    sample = test_dataset.__getitem__(sample_id)
-    inputs = sample["input"].float().unsqueeze(0)   # need to add dim for batch_size=1
-    targets = sample["target"]
-    lengths = [sample["length"]]
+        sample = test_dataset.__getitem__(sample_id)
+        inputs = sample["input"].float().unsqueeze(0)   # need to add dim for batch_size=1
+        targets = sample["target"]
+        lengths = [sample["length"]]
 
-    preds = model(inputs, lengths)
-    preds = preds.argmax(dim=2).flatten()
-    preds_chord = [new_chord_map[key.item()] for key in preds]
-    targets = targets.flatten()
-    mask = targets != -1                            # Mask the outputs and targets
-    targets_chord = [new_chord_map[key.item()] for key in targets[mask]]
+        preds = model(inputs, lengths)
+        preds = preds.argmax(dim=2).flatten()
+        preds_chord = [new_chord_map[key.item()] for key in preds]
+        targets = targets.flatten()
+        mask = targets != -1                            # Mask the outputs and targets
+        targets_chord = [new_chord_map[key.item()] for key in targets[mask]]
 
-    correct = (preds == targets[mask]).sum()
-    correct = correct.float()
-    acc = correct/sum(mask) * 100
+        correct = (preds == targets[mask]).sum()
+        correct = correct.float()
+        acc = correct/sum(mask) * 100
 
-    print('Number chords in the song: ', lengths[0])
-    print('\nPredictions') 
-    print(preds_chord)
-    print('\nTargets') 
-    print(targets_chord)
-    print('\nAccuracy in this song: %.2f\n' % acc.item())
+        print('Number chords in the song: ', lengths[0])
+        print('\nPredictions') 
+        print(preds_chord)
+        print('\nTargets') 
+        print(targets_chord)
+        print('\nAccuracy in this song: %.2f\n' % acc.item())
     
     return song_list, song_length, song_accuracy, preds_total, targets_total
 
