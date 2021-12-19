@@ -331,7 +331,7 @@ def get_dataset5(melody, beats):
     print('\t(1): Root pitch and #. Vocab size of %d' % len(unique_pitch))
     print('\t(2): triad. Vocab size of %d' % len(unique_triad))
     print('\t(3): Extra note. Vocab size of %d' % len(unique_added_note))
-    print('\t(4): Melody pitch. Vocab size of %d\n' % len(unique_notes))
+    print('\t(4): Bass pitch. Vocab size of %d\n' % len(unique_notes))
 
     return beats_mel, vocab_sizes, target_size
 

@@ -157,6 +157,10 @@ def train(args):
                 print("\nNo improvement found during the last %d epochs, stopping optimization.\n" % early_stopping)
                 break
         
+        # if not learning, stop (for random search)
+        if epoch > 40 and val_accuracies[-1] < 10:
+            break
+
         print("EPOCH %d\tTrain/val loss: %.2f / %.2f\tLower loss: %.2f\tTrain/val accuracy: \t%.2f / %.2f" % (epoch, epoch_loss, val_losses[-1], best_cost, train_accuracies[-1], val_accuracies[-1]))
 
         
