@@ -1,3 +1,11 @@
 Grid search results:
 Dataset 8	Embed dim: 128	Layers: 1	Train acc: 82.83	Val acc: 58.44	Epochs: 64
 Dataset 8	Embed dim: 192	Layers: 1	Train acc: 91.00	Val acc: 60.31	Epochs: 55
+Dataset 8	Embed dim: 128	Layers: 2	Train acc: 90.23	Val acc: 60.88	Epochs: 90
+Dataset 8	Embed dim: 192	Layers: 2	Train acc: 94.00	Val acc: 61.23	Epochs: 89
+Dataset 8	Embed dim: 128	Layers: 3	Train acc: 88.81	Val acc: 60.23	Epochs: 86
+Dataset 8	Embed dim: 192	Layers: 3	Train acc: 90.00	Val acc: 60.93	Epochs: 87
+Dataset 8	Embed dim: 128	Layers: 4	Train acc: 7.22	Val acc: 4.88	Epochs: 33
+Dataset 8	Embed dim: 192	Layers: 4	Train acc: 90.44	Val acc: 53.48	Epochs: 145
+
+Best Validation accuracy: 61.23	Embed dim: 192	Layers: 2
