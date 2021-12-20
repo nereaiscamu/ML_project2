@@ -20,7 +20,7 @@ import time
 
 
 def grid_search():
-    dataset = 5
+    dataset = 8
     #embed_sizes = [64, 96, 128, 192]
     embed_sizes = [128, 192]
     layers = [1, 2, 3, 4]
@@ -61,7 +61,7 @@ def grid_search():
 
 def random_search():
     # choose dataset
-    dataset = 5
+    dataset = 8
 
     # select best grid search values
     embed_size = 192

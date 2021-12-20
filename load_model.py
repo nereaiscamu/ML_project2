@@ -79,33 +79,36 @@ def load_model(load_path, dataset, hidden_dim, layers, seed=42):
     
 
     # Qualitative study of ONE SONG
-    print('\nTest dataset of length %d. Enter the index of a sample:' % len(test_dataset))
-    input_ = input()
-    sample_id = int(input_)
-    assert sample_id < len(test_dataset) and sample_id >= 0, 'Invalid sample index'
+    while True:
+        print('\nTest dataset of length %d. Enter the index of a sample, or \'enter\' to skip :' % len(test_dataset))
+        input_ = input()
+        if input_ == '':
+            break
+        sample_id = int(input_)
+        assert sample_id < len(test_dataset) and sample_id >= 0, 'Invalid sample index'
 
-    sample = test_dataset.__getitem__(sample_id)
-    inputs = sample["input"].float().unsqueeze(0)   # need to add dim for batch_size=1
-    targets = sample["target"]
-    lengths = [sample["length"]]
+        sample = test_dataset.__getitem__(sample_id)
+        inputs = sample["input"].float().unsqueeze(0)   # need to add dim for batch_size=1
+        targets = sample["target"]
+        lengths = [sample["length"]]
 
-    preds = model(inputs, lengths)
-    preds = preds.argmax(dim=2).flatten()
-    preds_chord = [new_chord_map[key.item()] for key in preds]
-    targets = targets.flatten()
-    mask = targets != -1                            # Mask the outputs and targets
-    targets_chord = [new_chord_map[key.item()] for key in targets[mask]]
+        preds = model(inputs, lengths)
+        preds = preds.argmax(dim=2).flatten()
+        preds_chord = [new_chord_map[key.item()] for key in preds]
+        targets = targets.flatten()
+        mask = targets != -1                            # Mask the outputs and targets
+        targets_chord = [new_chord_map[key.item()] for key in targets[mask]]
 
-    correct = (preds == targets[mask]).sum()
-    correct = correct.float()
-    acc = correct/sum(mask) * 100
+        correct = (preds == targets[mask]).sum()
+        correct = correct.float()
+        acc = correct/sum(mask) * 100
 
-    print('Number chords in the song: ', lengths[0])
-    print('\nPredictions') 
-    print(preds_chord)
-    print('\nTargets') 
-    print(targets_chord)
-    print('\nAccuracy in this song: %.2f\n' % acc.item())
+        print('Number chords in the song: ', lengths[0])
+        print('\nPredictions') 
+        print(preds_chord)
+        print('\nTargets') 
+        print(targets_chord)
+        print('\nAccuracy in this song: %.2f\n' % acc.item())
     
     return song_list, song_length, song_accuracy, preds_total, targets_total
 
@@ -116,3 +119,31 @@ if __name__ == "__main__":
     layers = 2
 
     load_model(load_path, dataset, hidden_dim, layers)
+    
+
+def load_training_data(dataset, seed=42):
+    train_dataset, val_dataset, test_dataset, input_size, target_size = get_dataset_multi_hot(choice=dataset, seed=seed)
+    
+    # Load chord map -- from one-hot to chord name
+    with open('models/new_chord_map.pkl', 'rb') as f:
+        new_chord_map = pickle.load(f)
+        new_chord_map = dict((v,k) for k,v in new_chord_map.items())
+    
+    song_length = list()
+    targets_total = [[]]
+
+    # Print accuracy song-wise
+    for i, song in enumerate(train_dataset):
+        targets = song["target"]
+        lengths = [song["length"]]
+
+        targets = targets.flatten()
+        mask = targets != -1
+                
+        targets_chord = [new_chord_map[key.item()] for key in targets[mask]]
+        
+        song_length.append(int(lengths[0]))
+        targets_total.append(pd.DataFrame(targets_chord))
+        
+    
+    return song_length, targets_total
