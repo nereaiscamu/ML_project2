@@ -33,7 +33,6 @@ def preprocess_chords(beats, mel_included = False):
         beats= beats.loc[beats['chord'] != 'NC']
         beats['chord'].replace('', np.nan, inplace=True)
         beats= beats.loc[~beats['chord'].isna()]
-
         
     if mel_included == True:
         beats = beats.replace({'': np.nan})
@@ -98,8 +97,6 @@ def preprocess_chords(beats, mel_included = False):
         beats['chord_map'] = beats['chord_map'].str.replace('77','7') #to avoid repeated 7
         
     beats['new_chord'] = beats['Root_pitch'].str.cat(beats['chord_map'])
-    beats['new_chord'] = beats['new_chord'].loc[beats['new_chord'].shift(-1) != beats['new_chord']]
-    beats= beats.loc[~beats['new_chord'].isna()]
 
     
     #  Dataset 3: 3 VECTORS, ONE FOR THE ROOT PITCH, A SECOND FOR THE TRIAD FORM AND A THIRD FOR ADDED NOTES
@@ -223,6 +220,8 @@ def get_dataset_only_chord_1(beats):
     #beats['chord'].replace('', np.nan, inplace=True)
     beats = beats[['beatid', 'melid', 'chord', 'bar', 'beat', 'bass_pitch']]
     beats = preprocess_chords(beats, mel_included = False)
+    beats['new_chord'] = beats['new_chord'].loc[beats['new_chord'].shift(-1) != beats['new_chord']]
+    beats= beats.loc[~beats['new_chord'].isna()]
     beats = encode_chords_1(beats)
 
     unique_chords = pd.unique(beats['new_chord'])
