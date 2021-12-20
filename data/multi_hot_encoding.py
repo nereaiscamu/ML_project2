@@ -32,8 +32,9 @@ def preprocess_chords(beats, mel_included = False):
     if mel_included == False:
         beats= beats.loc[beats['chord'] != 'NC']
         beats['chord'].replace('', np.nan, inplace=True)
-        # beats['chord'].replace(-1, np.nan, inplace=True)
-        beats = beats.loc[~beats['chord'].isna()]
+        beats= beats.loc[~beats['chord'].isna()]
+        beats['chord'] = beats['chord'].loc[beats['chord'].shift(-1) != beats['chord']]
+        beats= beats.loc[~beats['chord'].isna()]
         
     if mel_included == True:
         beats = beats.replace({'': np.nan})
