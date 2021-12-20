@@ -20,10 +20,12 @@ import time
 
 
 def grid_search():
-    dataset = 8
+    dataset = 7
     #embed_sizes = [64, 96, 128, 192]
-    embed_sizes = [128, 192]
-    layers = [1, 2, 3, 4]
+    #embed_sizes = [128, 192]
+    embed_sizes = [192]
+    #layers = [1, 2, 3, 4]
+    layers = [2, 3]
 
     train_accs = np.empty((len(embed_sizes), len(layers)))
     val_accs = np.empty((len(embed_sizes), len(layers)))

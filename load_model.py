@@ -17,7 +17,7 @@ import pandas as pd
 import pdb
 
 
-def load_model(load_path, dataset, hidden_dim, layers, seed=42):
+def load_model(load_path, dataset, hidden_dim, layers, seed=42, song_input=True):
 
     cuda = torch.cuda.is_available()
     device = torch.device("cuda" if cuda else "cpu")
@@ -27,7 +27,6 @@ def load_model(load_path, dataset, hidden_dim, layers, seed=42):
     len_sequences = len(train_dataset) + len(val_dataset) + len(test_dataset)
     random_idxs = np.random.RandomState(seed=seed).permutation(len_sequences)
     test_split = random_idxs[int(len_sequences*0.9):]
-
 
     # Load model
     model = LSTM_Multihot(input_size, embed_size=hidden_dim, lstm_hidden_size=hidden_dim, target_size=target_size, num_layers=layers)
@@ -79,7 +78,7 @@ def load_model(load_path, dataset, hidden_dim, layers, seed=42):
     
 
     # Qualitative study of ONE SONG
-    while True:
+    while True and song_input:
         print('\nTest dataset of length %d. Enter the index of a sample, or \'enter\' to skip :' % len(test_dataset))
         input_ = input()
         if input_ == '':

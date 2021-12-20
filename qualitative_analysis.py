@@ -21,6 +21,10 @@ model_path = 'models/trained_models/optimized_192_2_dataset_1.pth'
 model_name = 'result_analysis/3hot_chords_only'
 dataset = 1
 
+model_path_mel = 'models/trained_models/optimized_192_2_dataset_4.pth'
+model_name_mel = 'result_analysis/chords_mel_data4'
+dataset_mel = 4
+
 
 hidden_dim = 192
 layers = 2
@@ -29,6 +33,9 @@ seed = 42
 
 # Whether or not to generate the root pitch confusion matrix for all individial songs
 do_conf_matrix_all_songs = False
+
+# Whether or not to compare song accuracies
+do_compare_accuracies = True
 
 # Load data
 #train_dataset, val_dataset, test_dataset, input_size, target_size= get_dataset_multi_hot(choice=dataset, val_split=0.1, test_split=0.1, seed=42)
@@ -44,6 +51,27 @@ num_chords = lambda x: len(x)
         
 #%%
 
+if do_compare_accuracies:
+    # Load baseline model
+    song_list, song_length, song_accuracy, preds, targets = load_model(model_path, dataset, hidden_dim, layers, seed, song_input=True)
+    song_df = pd.DataFrame()
+    song_df['Test_sample_ID'] = range(len(targets)-1)
+    song_df['Song'] = song_list
+    song_df['Song_Length'] = song_length
+    song_df['Song_Accuracy'] = song_accuracy
+
+
+    # Load melody model
+    song_list_mel, song_length_mel, song_accuracy_mel, preds_mel, targets_mel = load_model(model_path_mel, dataset_mel, hidden_dim, layers, seed, song_input=True)
+    song_mel_df = pd.DataFrame()
+    song_mel_df['Test_sample_ID'] = range(len(targets_mel)-1)  
+    song_mel_df['Song'] = song_list_mel 
+    song_mel_df['Song_Length'] = song_length_mel
+    song_mel_df['Song_Accuracy_mel'] = song_accuracy_mel
+    song_df = song_df.merge(song_mel_df['Song_Accuracy_mel'], right_index=True, left_index=True)
+    song_df['acc_diff'] = song_df['Song_Accuracy_mel'] - song_df['Song_Accuracy']
+    pdb.set_trace()
+
 def create_result_table(model_path, dataset, hidden_dim, layers, seed):
     song_list, song_length, song_accuracy, preds, targets = load_model(model_path, dataset, hidden_dim, layers, seed)
     results_numbers = pd.DataFrame()
@@ -53,11 +81,11 @@ def create_result_table(model_path, dataset, hidden_dim, layers, seed):
     results_numbers['Test_sample_ID'] = range(len(targets)-1)
     
     result_table = pd.DataFrame(columns=['Test_sample_ID', 'Target_Chords', 'Pred_Chords'])
-    for i, j  in enumerate (targets):
+    for i, target in enumerate (targets):
         result_song = pd.DataFrame()
-        result_song['Test_sample_ID'] = np.repeat(i, len(j))  # --> why i-1??
-        result_song['Chord_idx'] = range(1, len(j)+1)
-        result_song['Target_Chords'] = j
+        result_song['Test_sample_ID'] = np.repeat(i-1, len(target))  # i-1 necessary because for some reason targets is shifted from [0,43] to [1,44]. targets[0] is empty
+        result_song['Chord_idx'] = range(1, len(target)+1)
+        result_song['Target_Chords'] = target
         result_song['Pred_Chords'] = preds[i]
         result_table = pd.concat([result_table, result_song], axis=0)
         
@@ -72,13 +100,12 @@ def create_result_table(model_path, dataset, hidden_dim, layers, seed):
         
     result_table['Previous_target'] = prev_chord
     result_table['Target_Seq'] =  result_table['Previous_target'].str.cat(result_table['Target_Chords'])
-    
-    return result_table
+    return result_table, results_numbers
 
 
 
-result_table = create_result_table(model_path, dataset, hidden_dim, layers, seed)
-
+result_table, results_numbers = create_result_table(model_path, dataset, hidden_dim, layers, seed)
+pdb.set_trace()
 
 #%%
 
@@ -110,7 +137,7 @@ train_chord_size = train_sample_size_chords(train_table)
 
 #%%
 
-def F_score(result_table, train_chord_size ):
+def F_score(result_table, train_chord_size):
     '''
     Precision is the number of true positive results divided by the number of all positive results,
     including those not identified correctly, and the recall is the number of true positive results divided 
@@ -183,15 +210,12 @@ target_seq_accuracy = target_seq_accuracy(result_table)
 
 pio.renderers.default='browser'
 
-
+'''
 fig2 = px.scatter(result_table, x="Song_Length", y='Song_Accuracy')
 fig3 = px.scatter(Acc_chord_idx, x="Chord_idx", y='Chord_Accuracy', size = 'Sample_Size')
-fig4 = px.scatter(F_score, x = 'Target_Chords', y = 'f_score',
-                  size="Sample_Size_x", hover_name="Target_Chords", size_max=60)
-
+fig4 = px.scatter(F_score, x = 'Target_Chords', y = 'f_score', size="Sample_Size_x", hover_name="Target_Chords", size_max=60)
 fig5 = px.scatter(F_score, x = 'Sample_Size_Train', y = 'f_score')
-fig6 = px.scatter(target_seq_accuracy, x = 'Target_Seq', y = 'Seq_Accuracy', 
-                  size = 'Seq_Sample_Size')   
+fig6 = px.scatter(target_seq_accuracy, x = 'Target_Seq', y = 'Seq_Accuracy', size = 'Seq_Sample_Size')   
 fig7 = px.scatter(target_seq_accuracy, x = 'Seq_Sample_Size', y = 'Seq_Accuracy')   
 
 
@@ -201,7 +225,7 @@ fig4.show()
 fig5.show()
 fig6.show()
 fig7.show()
-
+'''
 #%% Root pitch
 
 
@@ -332,12 +356,8 @@ def added_note_vector(df, var, added_note_var, added_note_var_cor,t_root, p_root
     return df
     
 
-result_table = added_note_vector(result_table, 'chord_info_T', 'added_note_T', 'added_note_T_corr',
-                                 't_root', 'p_root')
-
-result_table = added_note_vector(result_table, 'chord_info_P', 'added_note_P', 'added_note_P_corr',
-                                 't_root', 'p_root')
-
+result_table = added_note_vector(result_table, 'chord_info_T', 'added_note_T', 'added_note_T_corr','t_root', 'p_root')
+result_table = added_note_vector(result_table, 'chord_info_P', 'added_note_P', 'added_note_P_corr','t_root', 'p_root')
 total_added_note = pd.unique(result_table['added_note_T'])
 
 
@@ -353,9 +373,7 @@ confusion_matrix_added_note = pd.crosstab(result_table['added_note_T'], result_t
                                normalize='all').round(4)*100
     
 create_save_matrix(confusion_matrix_root,  '_roots_crossmatrix.png', model_name)
-
 create_save_matrix(confusion_matrix_triad,  '_triad_crossmatrix.png', model_name)
-
 create_save_matrix(confusion_matrix_added_note,  '_addednote_crossmatrix.png', model_name)
 
 
