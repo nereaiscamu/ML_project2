@@ -31,10 +31,10 @@ seed = 42
 do_conf_matrix_all_songs = False
 
 # Load data
-train_dataset, val_dataset, test_dataset, input_size, target_size= get_dataset_multi_hot(choice= dataset, val_split=0.1, test_split=0.1, seed=42)
+train_dataset, val_dataset, test_dataset, input_size, target_size= get_dataset_multi_hot(choice= dataset1, val_split=0.1, test_split=0.1, seed=42)
 
 # Load model
-song_list, song_length, song_accuracy, preds, targets = load_model(model_path, dataset, hidden_dim, layers, seed)
+# song_list, song_length, song_accuracy, preds, targets = load_model(model_path, dataset, hidden_dim, layers, seed)
 
 
 # general functions
@@ -77,7 +77,8 @@ def create_result_table(model_path, dataset, hidden_dim, layers, seed):
 
 
 
-result_table = create_result_table(model_path, dataset, hidden_dim, layers, seed)
+result_table1 = create_result_table(model_path1, dataset1, hidden_dim, layers, seed)
+result_table4 = create_result_table(model_path4, dataset4, hidden_dim, layers, seed)
 
 
 #%%
