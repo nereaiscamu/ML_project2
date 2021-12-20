@@ -17,6 +17,7 @@ path = "C:/Users/nerea/OneDrive/Documentos/GitHub/ML_project2/data/wjazzd.db" # 
 engine = create_engine(f"sqlite:///{path}")
 beats = pd.read_sql("beats", engine)
 
+beats345 = beats.loc[beats['melid'] == 345]
 
 
 ''' HERE IS TO DECIDE HOW WIDE SOULD OUR VOCABULARY BE DEPENDING ON THE CHORDS APPEARING LESS THAN X TIMES
@@ -41,6 +42,7 @@ chords_count_discard = chords_count[(chords_count<10)]
 # #df_beats_mel = pd.concat([df_melody_new, df_chords_new.reindex(df_melody_new.index)], axis=1)
 # df_beats_mel = df_chords_new.merge(df_melody_new, left_on=new_index, right_on=new_index, how='outer')
 # df_beats_mel = df_beats_mel.reset_index(drop=False)
+
 
 
 #%%  Dataset 1: Basic dataset with only root pitches. Vocab size = 13. One-hot
@@ -101,6 +103,14 @@ choices = [10, 7, 0, 5, 3, 8, 2, 9, 6, 11, 4, 1, 12]
 
 beats["chord_num"] = np.select(conditions, choices) 
 beats = beats[['beatid', 'melid', 'chord', 'Root_pitch', 'chord_num', 'chord_info']] #remove useless columns
+
+
+table = pd.DataFrame()
+table['chord'] = [1, 1, 2, 2 ]
+
+table['chord'] = table['chord'].drop_duplicates()
+
+
 
 #%%  Dataset 2: NOW WE ADD A SECOND VECTOR WITH ALL THE INFO ABOUT THE CHORD BUT THE ROOT PITCH
 
