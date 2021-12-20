@@ -22,7 +22,7 @@ def load_model(load_path, dataset, hidden_dim, layers, seed=42, song_input=True)
     cuda = torch.cuda.is_available()
     device = torch.device("cuda" if cuda else "cpu")
 
-    train_dataset, val_dataset, test_dataset, input_size, target_size = get_dataset_multi_hot(choice=dataset, seed=seed)
+    train_dataset, val_dataset, test_dataset, input_size, target_size, song_ids = get_dataset_multi_hot(choice=dataset, seed=seed, get_song_ids=True)
     
     len_sequences = len(train_dataset) + len(val_dataset) + len(test_dataset)
     random_idxs = np.random.RandomState(seed=seed).permutation(len_sequences)
@@ -74,7 +74,7 @@ def load_model(load_path, dataset, hidden_dim, layers, seed=42, song_input=True)
         song_accuracy.append(round(float(acc),2))
         preds_total.append(pd.DataFrame(preds_chord))
         targets_total.append(pd.DataFrame(targets_chord))
-        print('Test song %d\tSong ID: %d\tLength: %d\tAccuracy: %.2f' % (i, test_split[i]+1, lengths[0], acc))
+        print('Test song %d\tSong ID: %d\tLength: %d\tAccuracy: %.2f' % (i, song_ids[test_split[i]], lengths[0], acc))
     
 
     # Qualitative study of ONE SONG
@@ -90,7 +90,6 @@ def load_model(load_path, dataset, hidden_dim, layers, seed=42, song_input=True)
         inputs = sample["input"].float().unsqueeze(0)   # need to add dim for batch_size=1
         targets = sample["target"]
         lengths = [sample["length"]]
-
         preds = model(inputs, lengths)
         preds = preds.argmax(dim=2).flatten()
         preds_chord = [new_chord_map[key.item()] for key in preds]

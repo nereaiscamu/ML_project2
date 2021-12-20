@@ -38,7 +38,7 @@ do_conf_matrix_all_songs = False
 do_compare_accuracies = True
 
 # Load data
-#train_dataset, val_dataset, test_dataset, input_size, target_size= get_dataset_multi_hot(choice=dataset, val_split=0.1, test_split=0.1, seed=42)
+train_dataset, val_dataset, test_dataset, input_size, target_size, song_ids = get_dataset_multi_hot(choice= dataset1, val_split=0.1, test_split=0.1, seed=42, get_song_ids=True)
 
 # Load model
 #song_list, song_length, song_accuracy, preds, targets = load_model(model_path, dataset, hidden_dim, layers, seed)
@@ -123,7 +123,7 @@ def create_train_table(dataset, seed):
         train_table = pd.concat([train_table, input_song], axis=0)
     return train_table
         
-train_table = create_train_table(dataset, seed)
+train_table = create_train_table(dataset1, seed)
 
 def train_sample_size_chords(train_table):    
     train_chord_size = train_table
@@ -175,7 +175,7 @@ def F_score(result_table, train_chord_size):
     F_score = F_score.merge(train_chord_size, left_on = 'Target_Chords', right_on = 'Target_Chords_Train' )
     return F_score
 
-F_score = F_score(result_table, train_chord_size )
+F_score = F_score(result_table1, train_chord_size )
 
 
 #%%
@@ -193,7 +193,7 @@ def accuracy_chord_idx(result_table):
     return Acc_chord_idx
 
 
-Acc_chord_idx = accuracy_chord_idx(result_table)
+Acc_chord_idx = accuracy_chord_idx(result_table1)
 
 
 def target_seq_accuracy(result_table):
@@ -205,7 +205,7 @@ def target_seq_accuracy(result_table):
     target_seq_accuracy = target_seq_accuracy.sort_values(by = 'Seq_Accuracy')
     return target_seq_accuracy
     
-target_seq_accuracy = target_seq_accuracy(result_table)
+target_seq_accuracy = target_seq_accuracy(result_table1)
 #%% Make plots
 # x and y given as array_like objects
 
@@ -278,13 +278,13 @@ def create_save_matrix(matrix, plot_name, model_name, title=None, show=True):
     figure.savefig(savepath, dpi=400)
 
 if do_conf_matrix_all_songs:
-    for i in result_table['Test_sample_ID'].unique():
-        song_df = root_pitch_confussion_matrix(result_table[result_table['Test_sample_ID'] == i])
+    for i in result_table1['Test_sample_ID'].unique():
+        song_df = root_pitch_confussion_matrix(result_table1[result_table1['Test_sample_ID'] == i])
         confusion_matrix_root = pd.crosstab(song_df['t_root'], song_df['p_root'], rownames=['Target'], colnames=['Predicted'], normalize='all').round(4)*100
         title = 'Song test ID ' + str(i) + '. Length: ' + str(results_numbers.at[i, 'Song_Length']) + ' Acc: ' + str(results_numbers.at[i, 'Song_Accuracy'])
         create_save_matrix(confusion_matrix_root,  'roots_crossmatrix_song_' + str(i) + '.png', 'result_analysis/all_songs/', title=title, show=False)
 
-result_table = root_pitch_confussion_matrix(result_table)
+result_table = root_pitch_confussion_matrix(result_table1)
 
 
 #%%

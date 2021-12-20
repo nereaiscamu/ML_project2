@@ -81,7 +81,11 @@ def train(args):
     # 354 training samples
     batch_size = 20
 
+    print(torch.__version__)
+    device = torch.device("cuda:0") # Uncomment this to run on GPU
+    print(str(device))
     cuda = torch.cuda.is_available()
+    print("Cuda available: " + str(cuda))
     device = torch.device("cuda" if cuda else "cpu")
 
     if args.use_saved_dataset:
