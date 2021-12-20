@@ -297,6 +297,8 @@ def song_analysis(df, song_id, model_name, model_name_mel):
     create_save_matrix(result_song, 'triad_T', 'Pred_triad_form_mel', str(song_id) + '_triadform_crossmatrix.png', model_name_mel, title=None, show=True)
     create_save_matrix(result_song, 'added_note_T', 'Pred_added_note',  str(song_id) + '_addednote_crossmatrix.png', model_name, title=None, show=True)
     create_save_matrix(result_song, 'added_note_T', 'Pred_added_note_mel', str(song_id) + '_addednote_crossmatrix.png', model_name_mel, title=None, show=True)
+    create_save_matrix(result_song, 'Target_Chords', 'Pred_Chords', str(song_id) + '_crossmatrix.png', model_name, title=None, show=True)
+    create_save_matrix(result_song, 'Target_Chords', 'Pred_Chords_mel', str(song_id) + '_crossmatrix.png', model_name_mel, title=None, show=True)
     result_song_simple = result_song[['Test_sample_ID', 'Song', 'Target_Chords', 'Pred_Chords', 'Pred_Chords_mel']]
     # Check whether the specified path exists or not
     path = pathlib.os.path.join(result_analysis_path,'song_'+ str(song_id))
@@ -363,6 +365,8 @@ Acc_chord_idx_mel = accuracy_chord_idx(result_table_mel)
 
 target_seq_accuracy_chords= target_seq_accuracy(result_table)
 target_seq_accuracy_mel = target_seq_accuracy(result_table_mel)
+
+#%%
 
 
 result_song = song_analysis(result_table_all, 188, model_name, model_name_mel)
