@@ -103,7 +103,6 @@ def create_result_table(model_path, dataset, hidden_dim, layers, seed):
     return result_table, results_numbers
 
 
-
 result_table, results_numbers = create_result_table(model_path, dataset, hidden_dim, layers, seed)
 pdb.set_trace()
 
