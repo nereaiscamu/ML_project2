@@ -205,7 +205,7 @@ if __name__ == "__main__":
 
     parser = ArgumentParser(description='Train a model')
 
-    parser.add_argument('--dataset', type=int, default=8)
+    parser.add_argument('--dataset', type=int, default=7)
     parser.add_argument('--hidden-dim', type=int, default=192)
     parser.add_argument('--lstm-layers', type=int, default=2)
     parser.add_argument('--max-epochs', type=int, default=200)
@@ -219,7 +219,7 @@ if __name__ == "__main__":
 
     parser.add_argument('--save-path', type=str,
                         #default=None,
-                        default='models/trained_models/optimized_192_2_dataset_8.pth',
+                        default='models/trained_models/optimized_192_2_dataset_7_non_optimal.pth',
                         help='')
 
     args = parser.parse_args()

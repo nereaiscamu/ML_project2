@@ -112,14 +112,6 @@ def load_model(load_path, dataset, hidden_dim, layers, seed=42):
     
     return song_list, song_length, song_accuracy, preds_total, targets_total
 
-if __name__ == "__main__":
-    load_path = 'models/trained_models/model_name.pth'
-    dataset = 2
-    hidden_dim = 64
-    layers = 2
-
-    load_model(load_path, dataset, hidden_dim, layers)
-    
 
 def load_training_data(dataset, seed=42):
     train_dataset, val_dataset, test_dataset, input_size, target_size = get_dataset_multi_hot(choice=dataset, seed=seed)

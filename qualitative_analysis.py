@@ -12,14 +12,14 @@ from multi_hot_encoding import get_dataset_multi_hot
 
 # Select model. !! Use according datset, hidden_dim, layers and seed !!
 
-model_path4 = 'models/trained_models/optimized_192_2_dataset_4.pth'
-model_name4 = 'result_analysis/chords_mel_data4'
-dataset4 = 4
-
-model_path1 = 'models/trained_models/optimized_192_2_dataset_1.pth'
-model_name1 = 'result_analysis/3hot_chords_only'
-dataset1 = 1
-
+'''
+model_path = 'models/trained_models/optimized_192_2_dataset_4.pth'
+model_name = 'result_analysis/chords_mel_data4'
+dataset = 4
+'''
+model_path = 'models/trained_models/optimized_192_2_dataset_1.pth'
+model_name = 'result_analysis/3hot_chords_only'
+dataset = 1
 
 
 hidden_dim = 192
@@ -31,10 +31,10 @@ seed = 42
 do_conf_matrix_all_songs = False
 
 # Load data
-train_dataset, val_dataset, test_dataset, input_size, target_size= get_dataset_multi_hot(choice= dataset, val_split=0.1, test_split=0.1, seed=42)
+#train_dataset, val_dataset, test_dataset, input_size, target_size= get_dataset_multi_hot(choice=dataset, val_split=0.1, test_split=0.1, seed=42)
 
 # Load model
-song_list, song_length, song_accuracy, preds, targets = load_model(model_path, dataset, hidden_dim, layers, seed)
+#song_list, song_length, song_accuracy, preds, targets = load_model(model_path, dataset, hidden_dim, layers, seed)
 
 
 # general functions
