@@ -119,3 +119,31 @@ if __name__ == "__main__":
     layers = 2
 
     load_model(load_path, dataset, hidden_dim, layers)
+    
+
+def load_training_data(dataset, seed=42):
+    train_dataset, val_dataset, test_dataset, input_size, target_size = get_dataset_multi_hot(choice=dataset, seed=seed)
+    
+    # Load chord map -- from one-hot to chord name
+    with open('models/new_chord_map.pkl', 'rb') as f:
+        new_chord_map = pickle.load(f)
+        new_chord_map = dict((v,k) for k,v in new_chord_map.items())
+    
+    song_length = list()
+    targets_total = [[]]
+
+    # Print accuracy song-wise
+    for i, song in enumerate(train_dataset):
+        targets = song["target"]
+        lengths = [song["length"]]
+
+        targets = targets.flatten()
+        mask = targets != -1
+                
+        targets_chord = [new_chord_map[key.item()] for key in targets[mask]]
+        
+        song_length.append(int(lengths[0]))
+        targets_total.append(pd.DataFrame(targets_chord))
+        
+    
+    return song_length, targets_total
