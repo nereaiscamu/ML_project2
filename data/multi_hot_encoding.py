@@ -339,7 +339,7 @@ def get_dataset5(melody, beats):
 
 # *************** DATASETS -- ALL COMBINATIONS *******************
 
-def get_dataset_multi_hot(choice=1, val_split=0.1, test_split=0.1, seed=42):
+def get_dataset_multi_hot(choice=1, val_split=0.1, test_split=0.1, seed=42, get_song_ids=False):
     '''
     Generate train and test dataset. Based on dataset choice
     choice:
@@ -372,6 +372,7 @@ def get_dataset_multi_hot(choice=1, val_split=0.1, test_split=0.1, seed=42):
     num_mels = beats['melid'].max()
     melodies = []
     bass_pitch = []
+    song_ids = []
 
     # for each song load its chord seq
     for i in range(1, num_mels+1):
@@ -386,6 +387,7 @@ def get_dataset_multi_hot(choice=1, val_split=0.1, test_split=0.1, seed=42):
             seq_added_note = song['added_note_num'].to_numpy()
 
         if len(seq_pitch) > 1:
+            song_ids.append(i)
             # One input for each melody note
             if choice == 3: 
                 seq_pitch_mel = song['pitch_encoded'].to_numpy()
@@ -498,6 +500,8 @@ def get_dataset_multi_hot(choice=1, val_split=0.1, test_split=0.1, seed=42):
     with open('data/datasets/dataset' + str(choice) + '.pickle', 'wb') as f:
         pickle.dump(data, f)
 
+    if get_song_ids:
+        return train_dataset, val_dataset, test_dataset, input_size, target_size, song_ids
     return train_dataset, val_dataset, test_dataset, input_size, target_size
 
 
