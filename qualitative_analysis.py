@@ -415,7 +415,9 @@ target_seq_accuracy_mel = target_seq_accuracy(result_table_mel)
 
 #result_song = song_analysis(result_table_all, 197, model_name, model_name_mel)
 
-pdb.set_trace()
+# histogram of test chords
+# result_table['t_root'].value_counts().plot(kind='bar')
+# plt.show()
 #%%
 create_save_matrix(result_table_all, 't_root', 'Pred_Root',  '_roots_crossmatrix.png', model_name, title=None, show=True, norm='index')  #  norm='index' makes the normalization by rows. Delete if normalization by entire matrix is wanted
 create_save_matrix(result_table_all, 't_root', 'Pred_Root_mel',  '_roots_crossmatrix.png', model_name_mel, title=None, show=True, norm='index')
