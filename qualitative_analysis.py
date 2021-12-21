@@ -328,6 +328,7 @@ def song_analysis(df, song_id, model_name, model_name_mel):
     create_save_matrix(result_song, 'Target_Chords', 'Pred_Chords_mel', str(song_id) + '_crossmatrix.png', model_name_mel, title=None, show=True)
     result_song_simple = result_song[['Test_sample_ID', 'Song', 'Target_Chords', 'Pred_Chords', 'Pred_Chords_mel']]
     decoded_mel = get_decoded_melody(song_id)
+    decoded_mel.pop(0)
     result_song_simple['Melody'] = decoded_mel
     # Check whether the specified path exists or not
     path = pathlib.os.path.join(result_analysis_path,'song_'+ str(song_id))
@@ -397,7 +398,7 @@ target_seq_accuracy_mel = target_seq_accuracy(result_table_mel)
 #%%
 
 
-result_song = song_analysis(result_table_all, 256, model_name, model_name_mel)
+result_song = song_analysis(result_table_all, 73, model_name, model_name_mel)
 
 
 #%%
