@@ -68,7 +68,8 @@ def load_model(load_path, dataset, hidden_dim, layers, seed=42, song_input=True)
         preds_chord = [new_chord_map[key.item()] for key in preds]
         targets_chord = [new_chord_map[key.item()] for key in targets[mask]]
         
-#       song_length.append(int(lengths[0]))
+#       song_list.append(test_split[i]+1)
+        song_length.append(int(lengths[0]))
         song_accuracy.append(round(float(acc),2))
         preds_total.append(pd.DataFrame(preds_chord))
         targets_total.append(pd.DataFrame(targets_chord))
