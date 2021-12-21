@@ -402,8 +402,14 @@ result_song = song_analysis(result_table_all, 197, model_name, model_name_mel)
 
 
 #%%
+create_save_matrix(result_table_all, 't_root', 'Pred_Root',  '_roots_crossmatrix.png', model_name, title=None, show=True)
+create_save_matrix(result_table_all, 't_root', 'Pred_Root_mel',  '_roots_crossmatrix.png', model_name_mel, title=None, show=True)
 
-# confusion_matrix_root = pd.crosstab(result_table['t_root'], result_table['p_root'], rownames=['Target'], colnames=['Predicted'], 
+create_save_matrix(result_table_all, 'triad_T', 'Pred_triad_form',  '_triad_form_crossmatrix.png', model_name, title=None, show=True)
+create_save_matrix(result_table_all, 'triad_T', 'Pred_triad_form_mel',  '_triad_form_crossmatrix.png', model_name_mel, title=None, show=True)
+
+create_save_matrix(result_table_all, 'added_note_T', 'Pred_added_note',  '_added_note_crossmatrix.png', model_name, title=None, show=True)
+create_save_matrix(result_table_all, 'added_note_T', 'Pred_added_note_mel',  '_added_note_crossmatrix.png', model_name_mel, title=None, show=True)# confusion_matrix_root = pd.crosstab(result_table['t_root'], result_table['p_root'], rownames=['Target'], colnames=['Predicted'], 
 #                                normalize='all').round(4)*100
   
 # confusion_matrix_triad = pd.crosstab(result_table['triad_T'], result_table['triad_P_corr'], rownames=['Target Triad Form'], colnames=['Predicted Triad Form'], 
