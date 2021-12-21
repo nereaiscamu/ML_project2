@@ -45,7 +45,6 @@ def load_model(load_path, dataset, hidden_dim, layers, seed=42, song_input=True)
         new_chord_map = pickle.load(f)
         new_chord_map = dict((v,k) for k,v in new_chord_map.items())
     
-    song_list = list()
     song_length = list()
     song_accuracy = list()
     preds_total = [[]]
@@ -69,8 +68,7 @@ def load_model(load_path, dataset, hidden_dim, layers, seed=42, song_input=True)
         preds_chord = [new_chord_map[key.item()] for key in preds]
         targets_chord = [new_chord_map[key.item()] for key in targets[mask]]
         
-        song_list.append(test_split[i]+1)
-        song_length.append(int(lengths[0]))
+#       song_length.append(int(lengths[0]))
         song_accuracy.append(round(float(acc),2))
         preds_total.append(pd.DataFrame(preds_chord))
         targets_total.append(pd.DataFrame(targets_chord))
@@ -108,7 +106,7 @@ def load_model(load_path, dataset, hidden_dim, layers, seed=42, song_input=True)
         print(targets_chord)
         print('\nAccuracy in this song: %.2f\n' % acc.item())
     
-    return song_list, song_length, song_accuracy, preds_total, targets_total
+    return song_ids, song_length, song_accuracy, preds_total, targets_total
 
 
 def load_training_data(dataset, seed=42):
