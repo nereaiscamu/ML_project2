@@ -30,8 +30,8 @@ dataset_mel = 4
 
 
 project_path = "C:/Users/nerea/OneDrive/Documentos/GitHub/ML_project2" #to change
+project_path = os.getcwd()
 result_analysis_path = pathlib.os.path.join(project_path,'result_analysis')
-
 
 hidden_dim = 192
 layers = 2
@@ -369,7 +369,7 @@ target_seq_accuracy_mel = target_seq_accuracy(result_table_mel)
 #%%
 
 
-result_song = song_analysis(result_table_all, 188, model_name, model_name_mel)
+result_song = song_analysis(result_table_all, 256, model_name, model_name_mel)
 
 
 #%%
