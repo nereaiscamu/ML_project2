@@ -33,7 +33,7 @@ dataset_mel = 4
 
 project_path = "C:/Users/nerea/OneDrive/Documentos/GitHub/ML_project2" #to change
 project_path = os.getcwd()
-result_analysis_path = pathlib.os.path.join(project_path,'result_analysis')
+result_analysis_path = pathlib.os.path.join(project_path,'result_analysis/Report')
 
 hidden_dim = 192
 layers = 2
@@ -236,13 +236,13 @@ def triad_vector(df, var, mod_vector, chord_info_name, triad_var, triad_var_corr
 
 ''' ADDED NOTE VECTOR '''
 
-def added_note_vector(df, var, added_note_var, added_note_var_cor,t_root, p_root ):   
+def added_note_vector(df, var, added_note_var, added_note_var_cor, t_triad, p_triad_corr):   
     df[added_note_var] = df[var]
 
     
     #remove all information which is already in the triad form vector 
     # (7alt --> mapped to 7)
-    remove_note_info = ['-', '+', 'sus',  'b5', 'alt'] 
+    remove_note_info = ['-', '+', 'sus',  'b5'] 
     for i in remove_note_info:
         df[added_note_var] = df[added_note_var].str.replace(i,'')
     
@@ -253,7 +253,7 @@ def added_note_vector(df, var, added_note_var, added_note_var_cor,t_root, p_root
     df.loc[df[added_note_var] == '', added_note_var] = 'none'
     
     df[added_note_var_cor] = df[added_note_var]
-    df.loc[ df[t_root] != df[p_root] , added_note_var_cor] = 'wrong_root'
+    df.loc[ df[t_triad]!=df[p_triad_corr], added_note_var_cor] = 'wrong_chord'
     
     return df
 
@@ -269,8 +269,8 @@ def separating_vectors_acc(df):
     result_table = triad_vector(result_table, 'Pred_Chords', 'p_mod', 
                             'chord_info_P', 'triad_P', 'triad_P_corr', 
                             't_root', 'p_root' ) 
-    result_table = added_note_vector(result_table, 'chord_info_T', 'added_note_T', 'added_note_T_corr','t_root', 'p_root')
-    result_table = added_note_vector(result_table, 'chord_info_P', 'added_note_P', 'added_note_P_corr','t_root', 'p_root')
+    result_table = added_note_vector(result_table, 'chord_info_T', 'added_note_T', 'added_note_T_corr','triad_T', 'triad_P_corr')
+    result_table = added_note_vector(result_table, 'chord_info_P', 'added_note_P', 'added_note_P_corr','triad_T', 'triad_P_corr')
     return result_table
     
 #%% Creating confusion matrices
@@ -409,35 +409,77 @@ create_save_matrix(result_table_all, 'triad_T', 'Pred_triad_form',  '_triad_form
 create_save_matrix(result_table_all, 'triad_T', 'Pred_triad_form_mel',  '_triad_form_crossmatrix.png', model_name_mel, title=None, show=True)
 
 create_save_matrix(result_table_all, 'added_note_T', 'Pred_added_note',  '_added_note_crossmatrix.png', model_name, title=None, show=True)
-create_save_matrix(result_table_all, 'added_note_T', 'Pred_added_note_mel',  '_added_note_crossmatrix.png', model_name_mel, title=None, show=True)# confusion_matrix_root = pd.crosstab(result_table['t_root'], result_table['p_root'], rownames=['Target'], colnames=['Predicted'], 
-#                                normalize='all').round(4)*100
+create_save_matrix(result_table_all, 'added_note_T', 'Pred_added_note_mel',  '_added_note_crossmatrix.png', model_name_mel, title=None, show=True)
   
-# confusion_matrix_triad = pd.crosstab(result_table['triad_T'], result_table['triad_P_corr'], rownames=['Target Triad Form'], colnames=['Predicted Triad Form'], 
-#                                normalize='all').round(4)*100
 
-# confusion_matrix_added_note = pd.crosstab(result_table['added_note_T'], result_table['added_note_P_corr'], rownames=['Target Added Note'], colnames=['Predicted Added Note'], 
-#                                normalize='all').round(4)*100
-    
-# create_save_matrix(confusion_matrix_root,  '_roots_crossmatrix.png', model_name)
-# create_save_matrix(confusion_matrix_triad,  '_triad_crossmatrix.png', model_name)
-# create_save_matrix(confusion_matrix_added_note,  '_addednote_crossmatrix.png', model_name)
 #%% Make plots
 # x and y given as array_like objects
 
+
+
+# F_score_c = F_score_chords.loc[F_score_chords['Sample_Size_Train']>400]
+
+# fig2 = px.scatter(result_table, x="Song_Length", y='Song_Accuracy')
+# fig3 = px.scatter(Acc_chord_idx, x="Chord_idx", y='Chord_Accuracy', size = 'Sample_Size')
+
+# fig5 = px.scatter(F_score, x = 'Sample_Size_Train', y = 'f_score')
+# fig6 = px.scatter(target_seq_accuracy, x = 'Target_Seq', y = 'Seq_Accuracy', size = 'Seq_Sample_Size')   
+# fig7 = px.scatter(target_seq_accuracy, x = 'Seq_Sample_Size', y = 'Seq_Accuracy')   
+
+def scatter(df, x_var, y_var, title, xlabel, ylabel, size= None, color = None, color_name= None):
+    if color == None and size!=None:
+        fig = px.scatter(df, x= x_var, y= y_var, size = size, hover_name= size,
+                 labels={
+                     x_var: xlabel,
+                     y_var: ylabel},
+                 title = title)
+    if (color == None and  size == None):
+        fig = px.scatter(df, x= x_var, y= y_var,
+                 labels={
+                     x_var: xlabel,
+                     y_var: ylabel},
+                 title = title)
+    if (color != None and size != None):
+        fig = px.scatter(df, x= x_var, y= y_var, color = color, size = size ,
+                         hover_name= size, size_max=60,
+                 labels={
+                     x_var: xlabel,
+                     y_var: ylabel,
+                     color : color_name},
+                 title = title)
+    if  (color != None and size == None):
+        fig = px.scatter(df, x= x_var, y= y_var, color = color, 
+                 labels={
+                     x_var: xlabel,
+                     y_var: ylabel,
+                     color : color_name},
+                 title = title)
+    return fig 
+
+
+#%%
+
 pio.renderers.default='browser'
 
+F_score_mel = F_score_mel.loc[F_score_mel['Sample_Size_x']>10]
 
-fig2 = px.scatter(result_table, x="Song_Length", y='Song_Accuracy')
-fig3 = px.scatter(Acc_chord_idx, x="Chord_idx", y='Chord_Accuracy', size = 'Sample_Size')
-fig4 = px.scatter(F_score, x = 'Target_Chords', y = 'f_score', size="Sample_Size_x", hover_name="Target_Chords", size_max=60)
-fig5 = px.scatter(F_score, x = 'Sample_Size_Train', y = 'f_score')
-fig6 = px.scatter(target_seq_accuracy, x = 'Target_Seq', y = 'Seq_Accuracy', size = 'Seq_Sample_Size')   
-fig7 = px.scatter(target_seq_accuracy, x = 'Seq_Sample_Size', y = 'Seq_Accuracy')   
+plot_f_score = scatter(F_score_mel.sort_values(by = 'Target_Chords'),
+                       'Target_Chords', 'f_score', "Chord F-score in the melody model weigthed by training chord appearance",
+                       'Target Chords', 'F-score (%)', size = "Sample_Size_Train" )    
+
+acc_chord_idx = scatter(Acc_chord_idx, 'Chord_idx', 'Chord_Accuracy', 
+                        "Chord accuracy vs chord index in the song sequence",
+                       'Chords Index', 'Chord Accuracy (%)', size = "Sample_Size" )    
+
+acc_chord_idx.show()
+
+             
+
+# fig2.show()
+# fig3.show()
+plot_f_score.show()
+# fig5.show()
+# fig6.show()
+# fig7.show()
 
 
-fig2.show()
-fig3.show()
-fig4.show()
-fig5.show()
-fig6.show()
-fig7.show()
