@@ -21,7 +21,6 @@ def load_model(load_path, dataset, hidden_dim, layers, seed=42, song_input=True)
 
     cuda = torch.cuda.is_available()
     device = torch.device("cuda" if cuda else "cpu")
-    device = torch.device("cpu")
 
     train_dataset, val_dataset, test_dataset, input_size, target_size, song_ids = get_dataset_multi_hot(choice=dataset, seed=seed, get_song_ids=True)
     
