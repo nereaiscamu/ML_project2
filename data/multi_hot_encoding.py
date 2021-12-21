@@ -339,7 +339,7 @@ def get_dataset5(melody, beats):
 
 # *************** DATASETS -- ALL COMBINATIONS *******************
 
-def get_dataset_multi_hot(choice=1, val_split=0.1, test_split=0.1, seed=42, get_song_ids=False):
+def get_dataset_multi_hot(choice=1, val_split=0.1, test_split=0.1, seed=42, get_song_ids=False, return_mel_id=0):
     '''
     Generate train and test dataset. Based on dataset choice
     choice:
@@ -385,6 +385,14 @@ def get_dataset_multi_hot(choice=1, val_split=0.1, test_split=0.1, seed=42, get_
         else:
             seq_triad = song['triad_num'].to_numpy()
             seq_added_note = song['added_note_num'].to_numpy()
+
+        if return_mel_id > 0:
+            if choice!=1:
+                if i == return_mel_id:
+                    mel_sequence = song['pitch_sequence']
+                    return mel_sequence
+            else:
+                print('\nChoice 1 does not contain the melody encoding!\n')
 
         if len(seq_pitch) > 1:
             song_ids.append(i)

@@ -1,4 +1,6 @@
 from argparse import ArgumentParser
+
+from torch._C import device
 from load_model import load_model
 from load_model import load_training_data
 import numpy as np
@@ -54,6 +56,7 @@ num_chords = lambda x: len(x)
 song_list, song_length, song_accuracy, preds, targets = load_model(model_path, dataset, hidden_dim, layers, seed, song_input=True)
 song_list_mel, song_length_mel, song_accuracy_mel, preds_mel, targets_mel = load_model(model_path_mel, dataset_mel, hidden_dim, layers, seed, song_input=True)
         
+
 #%%
 
 def compare_accuracies_table(song_list, song_length, song_accuracy,song_list_mel, song_length_mel, song_accuracy_mel):
@@ -285,6 +288,30 @@ def create_save_matrix(df, var1, var2, plot_name, model_name, title=None, show=T
     savepath = str(model_name) + str(plot_name)
     figure = matrix_fig.get_figure()    
     figure.savefig(savepath, dpi=400)
+
+
+def get_decoded_melody(melid):
+    dict = {
+        0 : 'C',
+        1 : 'C#',
+        2 : 'D',
+        3 : 'D#',
+        4 : 'E',
+        5 : 'F',
+        6 : 'F#',
+        7 : 'G',
+        8 : 'G#',
+        9 : 'A',
+        10 : 'A#',
+        11 : 'B'
+    }
+    seq_melody = get_dataset_multi_hot(choice=4, return_mel_id=melid)
+    # Remove -1s from sequences
+    seq_melody = [[elem for elem in seq if elem != -1] for seq in seq_melody]
+    decoded_mel = [list(pd.Series(seq).map(dict)) for seq in seq_melody]
+
+    return decoded_mel
+
     
 def song_analysis(df, song_id, model_name, model_name_mel):
     result_song = df.loc[df['Song']== song_id]
@@ -300,6 +327,8 @@ def song_analysis(df, song_id, model_name, model_name_mel):
     create_save_matrix(result_song, 'Target_Chords', 'Pred_Chords', str(song_id) + '_crossmatrix.png', model_name, title=None, show=True)
     create_save_matrix(result_song, 'Target_Chords', 'Pred_Chords_mel', str(song_id) + '_crossmatrix.png', model_name_mel, title=None, show=True)
     result_song_simple = result_song[['Test_sample_ID', 'Song', 'Target_Chords', 'Pred_Chords', 'Pred_Chords_mel']]
+    decoded_mel = get_decoded_melody(song_id)
+    result_song_simple['Melody'] = decoded_mel
     # Check whether the specified path exists or not
     path = pathlib.os.path.join(result_analysis_path,'song_'+ str(song_id))
     if not os.path.exists(path):
@@ -309,7 +338,6 @@ def song_analysis(df, song_id, model_name, model_name_mel):
     result_song_simple.to_csv(pathlib.os.path.join(path, 'Model Predictions Compared.csv'), 
                       sep=';', header=True, index=False)
     return result_song
-
 
 #%% Creating the main tables
 
