@@ -127,7 +127,7 @@ def preprocess_chords(beats, mel_included = False):
         beats['added_note'] = beats['added_note'].str.replace(i,'')
     
     # 'C' from  No Chord is removed
-    beats['added_note'] = beats['added_note'].str.replace('C','')
+    #beats['added_note'] = beats['added_note'].str.replace('C','') --> deprecated, no "NC" in the new mapping
     
     # in the added note, diminished is only kept when it affects the 7th note
     # if only for the triad, already in the previous vector
