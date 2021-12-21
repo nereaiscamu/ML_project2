@@ -217,8 +217,6 @@ def root_pitch(result_table, root_type, chord_type, mod_type):
     # df.loc[(df['Correct'] == 0) & (df['p_root'] == df['t_root']), 'p_root'] = 'wrong extra'
     return result_table
 
-''' TRIAD VECTOR '''
-
 def triad_vector(df, var, mod_vector, chord_info_name, triad_var, triad_var_corr, t_root, p_root ):
     mods_to_keep = ['#', 'b']
     df.loc[ ~df[mod_vector].isin(mods_to_keep), chord_info_name] = df[var].str.slice(start = 1)
@@ -239,9 +237,6 @@ def triad_vector(df, var, mod_vector, chord_info_name, triad_var, triad_var_corr
     df.loc[ df[t_root] != df[p_root] , triad_var_corr] = 'wrong_root'
 
     return df
-
-
-''' ADDED NOTE VECTOR '''
 
 def added_note_vector(df, var, added_note_var, added_note_var_cor,t_root, p_root ):   
     df[added_note_var] = df[var]
@@ -264,8 +259,6 @@ def added_note_vector(df, var, added_note_var, added_note_var_cor,t_root, p_root
     
     return df
 
-
-
 def separating_vectors_acc(df):
     result_table = df
     result_table = root_pitch(result_table, 't_root', 'Target_Chords', 't_mod')
@@ -282,8 +275,12 @@ def separating_vectors_acc(df):
     
 #%% Creating confusion matrices
 
-def create_save_matrix(df, var1, var2, plot_name, model_name, title=None, show=True):
-    matrix = pd.crosstab(df[var1], df[var2], rownames=['Target'], colnames=['Predicted'], normalize='all').round(4)*100
+def create_save_matrix(df, var1, var2, plot_name, model_name, title=None, show=True, norm='all'):
+    matrix = pd.crosstab(df[var1], df[var2], rownames=['Target'], colnames=['Predicted'], normalize=norm).round(4)*100
+    if norm == 'index':
+        matrix = matrix.round(0).astype(int)
+    else:
+         matrix = matrix.round(1)
     matrix_fig = sn.heatmap(matrix, annot=True)
     plt.title(title)
     if show:
@@ -325,8 +322,8 @@ def song_analysis(df, song_id, model_name, model_name_mel):
     result_song = root_pitch(result_song, 't_root', 'Target_Chords', 't_mod')
     result_song = root_pitch(result_song,'p_root', 'Pred_Chords', 'p_mod')
     result_song = root_pitch(result_song,'p_root_mel', 'Pred_Chords_mel', 'p_mod_mel')
-    create_save_matrix(result_song, 't_root', 'Pred_Root',  str(song_id) + '_roots_crossmatrix.png', model_name, title=None, show=True)
-    create_save_matrix(result_song, 't_root', 'Pred_Root_mel', str(song_id) +'_roots_crossmatrix.png', model_name_mel, title=None, show=True)
+    create_save_matrix(result_song, 't_root', 'Pred_Root',  str(song_id) + '_roots_crossmatrix.png', model_name, title=None, show=True, norm='index') #  norm='index' makes the normalization by rows. Delete if normalization by entire matrix is wanted
+    create_save_matrix(result_song, 't_root', 'Pred_Root_mel', str(song_id) +'_roots_crossmatrix.png', model_name_mel, title=None, show=True, norm='index')
     create_save_matrix(result_song, 'triad_T', 'Pred_triad_form',  str(song_id) + '_triadform_crossmatrix.png', model_name, title=None, show=True)
     create_save_matrix(result_song, 'triad_T', 'Pred_triad_form_mel', str(song_id) + '_triadform_crossmatrix.png', model_name_mel, title=None, show=True)
     create_save_matrix(result_song, 'added_note_T', 'Pred_added_note',  str(song_id) + '_addednote_crossmatrix.png', model_name, title=None, show=True)
@@ -391,7 +388,6 @@ result_table_all = result_table_all.rename(columns = {'Pred_Chords_x' : 'Pred_Ch
                                                       'added_note_P_corr_x' : 'Pred_added_note',
                                                       'added_note_P_corr_y' : 'Pred_added_note_mel'  })
 
-pdb.set_trace()
 if do_conf_matrix_all_songs:
     for i in result_table['Test_sample_ID'].unique():
         song_df = root_pitch(result_table[result_table['Test_sample_ID'] == i])
@@ -419,10 +415,10 @@ target_seq_accuracy_mel = target_seq_accuracy(result_table_mel)
 
 #result_song = song_analysis(result_table_all, 197, model_name, model_name_mel)
 
-
+pdb.set_trace()
 #%%
-create_save_matrix(result_table_all, 't_root', 'Pred_Root',  '_roots_crossmatrix.png', model_name, title=None, show=True)
-create_save_matrix(result_table_all, 't_root', 'Pred_Root_mel',  '_roots_crossmatrix.png', model_name_mel, title=None, show=True)
+create_save_matrix(result_table_all, 't_root', 'Pred_Root',  '_roots_crossmatrix.png', model_name, title=None, show=True, norm='index')  #  norm='index' makes the normalization by rows. Delete if normalization by entire matrix is wanted
+create_save_matrix(result_table_all, 't_root', 'Pred_Root_mel',  '_roots_crossmatrix.png', model_name_mel, title=None, show=True, norm='index')
 
 create_save_matrix(result_table_all, 'triad_T', 'Pred_triad_form',  '_triad_form_crossmatrix.png', model_name, title=None, show=True)
 create_save_matrix(result_table_all, 'triad_T', 'Pred_triad_form_mel',  '_triad_form_crossmatrix.png', model_name_mel, title=None, show=True)
@@ -445,7 +441,7 @@ create_save_matrix(result_table_all, 'added_note_T', 'Pred_added_note_mel',  '_a
 
 pio.renderers.default='browser'
 
-
+'''
 fig2 = px.scatter(result_table, x="Song_Length", y='Song_Accuracy')
 fig3 = px.scatter(Acc_chord_idx, x="Chord_idx", y='Chord_Accuracy', size = 'Sample_Size')
 fig4 = px.scatter(F_score, x = 'Target_Chords', y = 'f_score', size="Sample_Size_x", hover_name="Target_Chords", size_max=60)
@@ -460,3 +456,4 @@ fig4.show()
 fig5.show()
 fig6.show()
 fig7.show()
+'''
