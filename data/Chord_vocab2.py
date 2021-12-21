@@ -43,6 +43,8 @@ chords_count_discard = chords_count[(chords_count<10)]
 # df_beats_mel = df_beats_mel.reset_index(drop=False)
 
 
+
+
 #%%  Dataset 1: Basic dataset with only root pitches. Vocab size = 13. One-hot
 
 beats['chord'].replace('', np.nan, inplace=True)
@@ -101,6 +103,14 @@ choices = [10, 7, 0, 5, 3, 8, 2, 9, 6, 11, 4, 1, 12]
 
 beats["chord_num"] = np.select(conditions, choices) 
 beats = beats[['beatid', 'melid', 'chord', 'Root_pitch', 'chord_num', 'chord_info']] #remove useless columns
+
+
+table = pd.DataFrame()
+table['chord'] = [1, 1, 2, 2 ]
+
+table['chord'] = table['chord'].drop_duplicates()
+
+
 
 #%%  Dataset 2: NOW WE ADD A SECOND VECTOR WITH ALL THE INFO ABOUT THE CHORD BUT THE ROOT PITCH
 

@@ -5,6 +5,8 @@ __pycache__/
 
 acc.png
 loss.png
+data/datasets
+models/new_chord_map.pkl
 
 # C extensions
 *.so
@@ -132,3 +134,6 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+*.png
+*.png
+*.png

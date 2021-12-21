@@ -81,7 +81,11 @@ def train(args):
     # 354 training samples
     batch_size = 20
 
+    print(torch.__version__)
+    device = torch.device("cuda:0") # Uncomment this to run on GPU
+    print(str(device))
     cuda = torch.cuda.is_available()
+    print("Cuda available: " + str(cuda))
     device = torch.device("cuda" if cuda else "cpu")
 
     if args.use_saved_dataset:
@@ -89,11 +93,10 @@ def train(args):
             (train_dataset, val_dataset, test_dataset, input_size, target_size) = pickle.load(f)
         print('*** Dataset ' + str(args.dataset) + ' loaded from file ***')
     else:
-        #train_dataset, val_dataset, test_dataset, input_size, target_size = get_dataset_multi_hot_new_encoding(choice=2)
         train_dataset, val_dataset, test_dataset, input_size, target_size = get_dataset_multi_hot(choice=args.dataset, seed=args.seed)
     
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True) 
-
+    
     # Create model
     #model = LSTMChord(vocab_size, lstm_hidden_size=16)
     #model = LSTMChordEmbedding(vocab_size, embed_size=16, lstm_hidden_size=16)
@@ -102,17 +105,15 @@ def train(args):
                             lstm_hidden_size=args.hidden_dim, 
                             target_size=target_size, 
                             num_layers=args.lstm_layers, 
-                            dropout_linear=0.2, 
-                            dropout_lstm=0.2)
+
+                            dropout_linear=args.dropout, 
+                            dropout_lstm=args.dropout)
+
     #model = LSTM_Multihot_MLP(input_size, embed_size=64, lstm_hidden_size=64, target_size=target_size, num_layers=2, dropout_linear=0.4, dropout_lstm=0.4)
     model = model.to(device)
 
     # Define training variables
-    #optimizer = optim.Adam(model.parameters(), lr=0.01)
-    optimizer = optim.Adam(model.parameters(), lr=0.01, weight_decay=1e-4)
-    #optimizer = optim.Adam(model.parameters(), lr=0.01, weight_decay=0.00001)
-    #optimizer = optim.SGD(model.parameters(), lr=0.0005)
-    #optimizer = optim.SGD(model.parameters(), lr=0.0001, momentum=0.9)
+    optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.wd)
 
     epochs = args.max_epochs
     best_cost = 1000
@@ -148,7 +149,6 @@ def train(args):
         val_losses.append(get_val_loss(model, val_dataset, device))
         train_accuracies.append(evaluate_model(model, train_dataset, device))
         val_accuracies.append(evaluate_model(model, val_dataset, device))
-        print("EPOCH %d\tTrain/val loss: \t%.4f\t%.4f\t\tTrain/val accuracy: \t%.2f\t%.2f" % (epoch, epoch_loss, val_losses[-1], train_accuracies[-1], val_accuracies[-1]))
 
         # Early stopping based on the validation set:
         # Check that improvement has been made in the last X epochs
@@ -160,10 +160,18 @@ def train(args):
             if last_improvement > early_stopping:
                 print("\nNo improvement found during the last %d epochs, stopping optimization.\n" % early_stopping)
                 break
+        
+        # if not learning, stop (for random search)
+        if epoch > 40 and val_accuracies[-1] < 10:
+            break
 
+        print("EPOCH %d\tTrain/val loss: %.2f / %.2f\tLower loss: %.2f\tTrain/val accuracy: \t%.2f / %.2f" % (epoch, epoch_loss, val_losses[-1], best_cost, train_accuracies[-1], val_accuracies[-1]))
+
+        
         if epoch == 50 or epoch == 100 or epoch == 150:
             for g in optimizer.param_groups:
                 g['lr'] /= 2
+        
 
     print('*** Training done! ***')
 
@@ -196,139 +204,28 @@ def train(args):
 
     return tr_acc, val_acc, epoch
 
-def load_model(load_path):
-    train_dataset, val_dataset, test_dataset, input_size, target_size = get_dataset_multi_hot(choice=7)
-
-    len_sequences = len(train_dataset) + len(val_dataset) + len(test_dataset)
-    random_idxs = np.random.RandomState(seed=42).permutation(len_sequences)
-    test_split = random_idxs[int(len_sequences*0.9):]
-
-    # Create model
-    #model = LSTMChord(vocab_size, lstm_hidden_size=16)
-    #model = LSTMChordEmbedding(vocab_size, embed_size=16, lstm_hidden_size=16)
-    model = LSTM_Multihot(input_size, embed_size=64, lstm_hidden_size=64, target_size=target_size, num_layers=2)
-    #model = LSTM_Multihot_MLP(input_size, embed_size=64, lstm_hidden_size=64, target_size=target_size, num_layers=2, dropout_linear=0.4, dropout_lstm=0.4)
-
-    model.load_state_dict(torch.load(load_path))
-
-    # EVALUATE
-    tr_acc = evaluate_model(model, train_dataset)
-    print('Train accuracy:\t%.2f' % tr_acc)
-    val_acc = evaluate_model(model, val_dataset)
-    print('Val accuracy:\t%.2f' % val_acc)
-    te_acc = evaluate_model(model, test_dataset)
-    print('Test accuracy:\t%.2f' % te_acc)
-
-    with open('models/new_chord_map.pkl', 'rb') as f:
-        new_chord_map = pickle.load(f)
-        new_chord_map = dict((v,k) for k,v in new_chord_map.items())
-    
-    song_list = list()
-    song_length = list()
-    song_accuracy = list()
-    preds_total = [[]]
-    targets_total = [[]]
-
-    for i, song in enumerate(test_dataset):
-        inputs = song["input"].float().unsqueeze(0)   # need to add dim for batch_size=1
-        targets = song["target"]
-        lengths = [song["length"]]
-
-        preds = model(inputs, lengths)
-        preds = preds.argmax(dim=2).flatten()
-        targets = targets.flatten()
-        mask = targets != -1
-        
-        correct = (preds == targets[mask]).sum()
-        correct = correct.float()
-        acc = correct/sum(mask) * 100
-        
-        preds_chord = [new_chord_map[key.item()] for key in preds]
-        targets_chord = [new_chord_map[key.item()] for key in targets[mask]]
-        
-        song_list.append(test_split[i]+1)
-        song_length.append(int(lengths[0]))
-        song_accuracy.append(round(float(acc),2))
-        preds_total.append(pd.DataFrame(preds_chord))
-        targets_total.append(pd.DataFrame(targets_chord))
-        print('Test song %d\tSong ID: %d\tLength: %d\tAccuracy: %.2f' % (i, test_split[i]+1, lengths[0], acc))
-    
-
-    # QUALITATIVE STUDY
-    while True:
-        print('\nTest dataset of length %d. Enter the index of a sample or (q)uit:' % len(test_dataset))
-        input_ = input()
-        if input_ == 'q':
-            break
-        sample_id = int(input_)
-        assert sample_id < len(test_dataset) and sample_id >= 0, 'Invalid sample index'
-
-        sample = test_dataset.__getitem__(sample_id)
-        inputs = sample["input"].float().unsqueeze(0)   # need to add dim for batch_size=1
-        targets = sample["target"]
-        lengths = [sample["length"]]
-
-        preds = model(inputs, lengths)
-        preds = preds.argmax(dim=2).flatten()
-        preds_chord = [new_chord_map[key.item()] for key in preds]
-        targets = targets.flatten()
-        # Mask the outputs and targets
-        mask = targets != -1
-        targets_chord = [new_chord_map[key.item()] for key in targets[mask]]
-
-        correct = (preds == targets[mask]).sum()
-        correct = correct.float()
-        acc = correct/sum(mask) * 100
-
-        print('Number chords in the song: ', lengths[0])
-        print('\nPredictions') 
-        print(preds_chord)
-        print('\nTargets') 
-        print(targets_chord)
-        print('\nAccuracy in this song: %.2f\n' % acc.item())
-        
-        return song_list, song_length, song_accuracy, preds_total, targets_total
-
-
 if __name__ == "__main__":
     np.random.seed(42)
 
     parser = ArgumentParser(description='Train a model')
-    parser.add_argument('--dataset', type=int,
-                        default=8,
-                        help='')
-    parser.add_argument('--hidden-dim', type=int,
-                        default=64,
-                        help='')
-    parser.add_argument('--lstm-layers', type=int,
-                        default=2,
-                        help='')
-    parser.add_argument('--max-epochs', type=int,
-                        default=200,
-                        help='')
-    parser.add_argument('--early-stopping', type=int,
-                        default=15,
-                        help='')
-    parser.add_argument('--seed', type=int,
-                        default=42,
-                        help='')
-    parser.add_argument('--use-saved-dataset', type=bool,
-                        default=False,
-                        help='')
+
+    parser.add_argument('--dataset', type=int, default=1)
+    parser.add_argument('--hidden-dim', type=int, default=192)
+    parser.add_argument('--lstm-layers', type=int, default=2)
+    parser.add_argument('--max-epochs', type=int, default=200)
+    parser.add_argument('--early-stopping', type=int, default=15)
+    parser.add_argument('--seed', type=int, default=42)
+    parser.add_argument('--lr', type=float, default=0.007)
+    parser.add_argument('--wd', type=float, default=5e-6)
+    parser.add_argument('--dropout', type=float, default=0.2)
+    parser.add_argument('--use-saved-dataset', type=bool, default=False)
+
+
     parser.add_argument('--save-path', type=str,
-                        # required=True,
                         #default=None,
-                        default='models/trained_models/model_name.pth',
+                        default='models/trained_models/optimized_192_2_dataset_1_new.pth',
                         help='')
-    parser.add_argument('--load-path', type=str,
-                        # required=True,
-                        default=None,
-                        #default='models/trained_models/model_1_dataset_1_s42.pth',
-                        help='')
-            
+
     args = parser.parse_args()
 
-    if args.load_path is not None:
-        load_model(args.load_path)
-    else:
-        train(args)
+    train(args)

@@ -1,0 +1,27 @@
+Random search results for	Dataset: 4	Embed dim: 192	Layers: 2
+Learning rate: 0.00280	Weight decay: 0.00001274	Dropout: 0.36	Train acc: 84.71	Val acc: 60.93	Epochs: 114
+Learning rate: 0.00010	Weight decay: 0.00014384	Dropout: 0.35	Train acc: 10.00	Val acc: 7.99	Epochs: 199
+Learning rate: 0.00207	Weight decay: 0.00000483	Dropout: 0.07	Train acc: 88.54	Val acc: 60.90	Epochs: 130
+Learning rate: 0.00025	Weight decay: 0.00061585	Dropout: 0.04	Train acc: 22.13	Val acc: 14.58	Epochs: 199
+Learning rate: 0.00083	Weight decay: 0.00037927	Dropout: 0.13	Train acc: 69.27	Val acc: 52.70	Epochs: 187
+Learning rate: 0.01725	Weight decay: 0.00008859	Dropout: 0.20	Train acc: 89.48	Val acc: 62.21	Epochs: 105
+Learning rate: 0.00695	Weight decay: 0.00002069	Dropout: 0.35	Train acc: 88.93	Val acc: 59.96	Epochs: 63
+Learning rate: 0.03162	Weight decay: 0.00061585	Dropout: 0.12	Train acc: 64.06	Val acc: 54.46	Epochs: 191
+Learning rate: 0.00045	Weight decay: 0.00037927	Dropout: 0.10	Train acc: 49.32	Val acc: 40.94	Epochs: 199
+Learning rate: 0.00018	Weight decay: 0.00014384	Dropout: 0.16	Train acc: 15.31	Val acc: 10.92	Epochs: 199
+Learning rate: 0.02336	Weight decay: 0.00008859	Dropout: 0.35	Train acc: 81.95	Val acc: 58.44	Epochs: 112
+Learning rate: 0.00034	Weight decay: 0.00000483	Dropout: 0.44	Train acc: 36.72	Val acc: 33.89	Epochs: 199
+Learning rate: 0.00010	Weight decay: 0.00000016	Dropout: 0.23	Train acc: 7.28	Val acc: 5.82	Epochs: 61
+Learning rate: 0.00062	Weight decay: 0.00023357	Dropout: 0.35	Train acc: 59.34	Val acc: 50.50	Epochs: 199
+Learning rate: 0.00025	Weight decay: 0.00000298	Dropout: 0.04	Train acc: 18.37	Val acc: 14.77	Epochs: 199
+Learning rate: 0.00083	Weight decay: 0.00005456	Dropout: 0.25	Train acc: 65.62	Val acc: 52.05	Epochs: 199
+Learning rate: 0.01725	Weight decay: 0.00000070	Dropout: 0.28	Train acc: 85.20	Val acc: 60.34	Epochs: 67
+Learning rate: 0.00280	Weight decay: 0.00000010	Dropout: 0.08	Train acc: 88.29	Val acc: 59.47	Epochs: 101
+Learning rate: 0.00379	Weight decay: 0.00000026	Dropout: 0.28	Train acc: 85.07	Val acc: 61.45	Epochs: 94
+Learning rate: 0.00941	Weight decay: 0.00000785	Dropout: 0.03	Train acc: 91.04	Val acc: 61.26	Epochs: 77
+Learning rate: 0.00113	Weight decay: 0.00003360	Dropout: 0.39	Train acc: 70.82	Val acc: 56.60	Epochs: 199
+Learning rate: 0.00207	Weight decay: 0.00001274	Dropout: 0.14	Train acc: 87.61	Val acc: 59.36	Epochs: 152
+Learning rate: 0.01274	Weight decay: 0.00100000	Dropout: 0.08	Train acc: 69.64	Val acc: 55.38	Epochs: 124
+
+Best:
+Learning rate: 0.01725	Weight decay: 0.00008859	Dropout: 0.20	Train acc: 89.48	Val acc: 62.21	Epochs: 105

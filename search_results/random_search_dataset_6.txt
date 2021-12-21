@@ -1,0 +1,16 @@
+Random search results for	Dataset: 6	Embed dim: 192	Layers: 2
+Learning rate: 0.00018	Weight decay: 0.00001274	Dropout: 0.17	Train acc: 10.13	Val acc: 8.40	Epochs: 199
+Learning rate: 0.00379	Weight decay: 0.00003360	Dropout: 0.31	Train acc: 89.20	Val acc: 61.58	Epochs: 108
+Learning rate: 0.00025	Weight decay: 0.00000298	Dropout: 0.27	Train acc: 25.77	Val acc: 22.60	Epochs: 199
+Learning rate: 0.00010	Weight decay: 0.00002069	Dropout: 0.49	Train acc: 14.43	Val acc: 9.67	Epochs: 199
+Learning rate: 0.03162	Weight decay: 0.00008859	Dropout: 0.11	Train acc: 78.04	Val acc: 56.06	Epochs: 77
+Learning rate: 0.00045	Weight decay: 0.00023357	Dropout: 0.38	Train acc: 43.55	Val acc: 35.33	Epochs: 199
+Learning rate: 0.00083	Weight decay: 0.00000183	Dropout: 0.46	Train acc: 59.34	Val acc: 52.64	Epochs: 199
+Learning rate: 0.00062	Weight decay: 0.00000785	Dropout: 0.00	Train acc: 48.47	Val acc: 42.40	Epochs: 199
+Learning rate: 0.00207	Weight decay: 0.00000043	Dropout: 0.25	Train acc: 83.68	Val acc: 60.28	Epochs: 132
+Learning rate: 0.02336	Weight decay: 0.00005456	Dropout: 0.19	Train acc: 87.26	Val acc: 60.53	Epochs: 73
+Learning rate: 0.01274	Weight decay: 0.00000016	Dropout: 0.28	Train acc: 86.73	Val acc: 59.44	Epochs: 169
+Learning rate: 0.01725	Weight decay: 0.00100000	Dropout: 0.48	Train acc: 58.77	Val acc: 51.88	Epochs: 143
+Learning rate: 0.00014	Weight decay: 0.00000113	Dropout: 0.13	Train acc: 7.28	Val acc: 5.82	Epochs: 64
+
+Best Validation accuracy: 61.58	Learning rate: 0.00379	Weight decay: 0.00003360	Dropout: 0.31
