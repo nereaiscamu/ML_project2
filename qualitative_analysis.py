@@ -44,7 +44,7 @@ seed = 42
 do_conf_matrix_all_songs = False
 
 # Whether or not to compare song accuracies
-do_compare_accuracies = True
+do_compare_accuracies = False
 
 # general functions
 correct_chords = lambda x: sum(x)/len(x)*100
@@ -53,8 +53,8 @@ num_chords = lambda x: len(x)
 #%%
 
 # Load models
-song_list, song_length, song_accuracy, preds, targets = load_model(model_path, dataset, hidden_dim, layers, seed, song_input=True)
-song_list_mel, song_length_mel, song_accuracy_mel, preds_mel, targets_mel = load_model(model_path_mel, dataset_mel, hidden_dim, layers, seed, song_input=True)
+song_list, song_length, song_accuracy, preds, targets = load_model(model_path, dataset, hidden_dim, layers, seed, song_input=False)
+song_list_mel, song_length_mel, song_accuracy_mel, preds_mel, targets_mel = load_model(model_path_mel, dataset_mel, hidden_dim, layers, seed, song_input=False)
         
 
 #%%
@@ -103,6 +103,13 @@ def create_result_table(song_list, song_length, song_accuracy, preds, targets):
         
     result_table['Previous_target'] = prev_chord
     result_table['Target_Seq'] =  result_table['Previous_target'].str.cat(result_table['Target_Chords'])
+
+    # compute accuracy when previous chord was correct
+    result_table['correct_prev_c'] = result_table.Correct.shift(1) * result_table.Correct
+    result_table.loc[0, 'prec_correct'] = 0
+    result_table['correct_prev_inc'] = - (result_table.Correct.shift(1)-1) * (result_table.Correct)
+    result_table.loc[0, 'correct_prev_inc'] = 0
+
     return result_table, results_numbers
 
 def create_train_table(dataset, seed):
@@ -352,6 +359,18 @@ song_acc_diff.to_csv(pathlib.os.path.join(result_analysis_path,'Song Accuracy co
 result_table, results_numbers = create_result_table(song_list, song_length, song_accuracy, preds, targets)
 result_table_mel, results_numbers_mel = create_result_table(song_list_mel, song_length_mel, song_accuracy_mel, preds_mel, targets_mel )
 
+total_samples = len(result_table)
+print('Baseline model:')
+print('Test accuracy: %.2f' % (result_table.Correct.sum() / total_samples * 100))
+print('Accuracy | Prev. correct: %.2f' % (result_table.correct_prev_c.sum() / result_table.Correct.sum() * 100))
+print('Accuracy | Prev. incorrect: %.2f\n' % (result_table.correct_prev_inc.sum() / (total_samples - result_table.Correct.sum()) * 100))
+
+print('Melody model:')
+print('Test accuracy: %.2f' % (result_table_mel.Correct.sum() / len(result_table_mel) * 100))
+print('Accuracy | Prev. correct: %.2f' % (result_table_mel.correct_prev_c.sum() / result_table_mel.Correct.sum() * 100))
+print('Accuracy | Prev. incorrect: %.2f\n' % (result_table_mel.correct_prev_inc.sum() / (total_samples - result_table_mel.Correct.sum()) * 100))
+
+
 resul_table_sep_vec = separating_vectors_acc(result_table)
 resul_table_sep_vec_mel = separating_vectors_acc(result_table_mel)
 
@@ -372,7 +391,7 @@ result_table_all = result_table_all.rename(columns = {'Pred_Chords_x' : 'Pred_Ch
                                                       'added_note_P_corr_x' : 'Pred_added_note',
                                                       'added_note_P_corr_y' : 'Pred_added_note_mel'  })
 
-
+pdb.set_trace()
 if do_conf_matrix_all_songs:
     for i in result_table['Test_sample_ID'].unique():
         song_df = root_pitch(result_table[result_table['Test_sample_ID'] == i])
@@ -398,7 +417,7 @@ target_seq_accuracy_mel = target_seq_accuracy(result_table_mel)
 #%%
 
 
-result_song = song_analysis(result_table_all, 197, model_name, model_name_mel)
+#result_song = song_analysis(result_table_all, 197, model_name, model_name_mel)
 
 
 #%%
