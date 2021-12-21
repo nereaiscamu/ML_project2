@@ -426,7 +426,7 @@ create_save_matrix(result_table_all, 'added_note_T', 'Pred_added_note_mel',  '_a
 
 pio.renderers.default='browser'
 
-'''
+
 fig2 = px.scatter(result_table, x="Song_Length", y='Song_Accuracy')
 fig3 = px.scatter(Acc_chord_idx, x="Chord_idx", y='Chord_Accuracy', size = 'Sample_Size')
 fig4 = px.scatter(F_score, x = 'Target_Chords', y = 'f_score', size="Sample_Size_x", hover_name="Target_Chords", size_max=60)
@@ -441,4 +441,3 @@ fig4.show()
 fig5.show()
 fig6.show()
 fig7.show()
-'''

@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 Test_sample_ID;Song;Target_Chords;Pred_Chords;Pred_Chords_mel;Melody
 2;256;D-;D7;C7;['C']
 2;256;G-;D7;G7;['F', 'C', 'C', 'C']
@@ -56,3 +57,63 @@ Test_sample_ID;Song;Target_Chords;Pred_Chords;Pred_Chords_mel;Melody
 2;256;D-;E-7;A7;['G', 'F#', 'F', 'D', 'C', 'F', 'F', 'F']
 2;256;G-;G7;A7;['G#', 'G', 'F#', 'F', 'E', 'F', 'G', 'F', 'A', 'C', 'D', 'C', 'D']
 2;256;D-;C7;D7;[]
+=======
+Test_sample_ID;Song;Target_Chords;Pred_Chords;Pred_Chords_mel
+2;256;D-;D7;C7
+2;256;G-;D7;G7
+2;256;D-;C7;G-
+2;256;G-;D7;G-
+2;256;D-;G7;D7
+2;256;G-;D7;G-
+2;256;D-;G7;D7
+2;256;G-;D7;G-
+2;256;G#j7;G7;C-7
+2;256;G-;G;G-
+2;256;G#j7;G7;D7
+2;256;G-;A-;G-
+2;256;A7;C7;A7
+2;256;D-;D7;D7
+2;256;G-;G7;A7
+2;256;D-;C7;C-7
+2;256;G-;G7;G-
+2;256;D-;C7;C-7
+2;256;G-;G7;G-
+2;256;D-;C7;C-7
+2;256;G-;G7;G-
+2;256;D-;C7;C-7
+2;256;G-;G7;G-
+2;256;D-;C7;C-7
+2;256;G-;G7;G-
+2;256;G#j7;C7;C-7
+2;256;G-;Gj7;G-
+2;256;G#j7;C7;D7
+2;256;G-;G;G-
+2;256;A7;C7;A7
+2;256;D-;D7;D7
+2;256;G-;G7;A7
+2;256;D-;C7;C-7
+2;256;G-;G7;G-
+2;256;A7;C7;C-7
+2;256;D-;G7;G-
+2;256;G-;D7;G-
+2;256;A7;C7;C-7
+2;256;D-;D7;G-
+2;256;G-;D7;G-
+2;256;A7;C7;C-7
+2;256;D-;D7;G-
+2;256;G-;D7;A7
+2;256;A7;C7;D7
+2;256;D#7;D7;G-
+2;256;D-;E7;D7
+2;256;A7;D7;A7
+2;256;D#7;D7;D7
+2;256;D-;E7;D7
+2;256;G-;D7;A7
+2;256;D-;D7;A7
+2;256;G-;G7;A7
+2;256;D-;C7;A7
+2;256;A#-;G7;A7
+2;256;D-;E-7;A7
+2;256;G-;G7;A7
+2;256;D-;C7;D7
+>>>>>>> Stashed changes
