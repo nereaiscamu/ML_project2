@@ -398,7 +398,7 @@ target_seq_accuracy_mel = target_seq_accuracy(result_table_mel)
 #%%
 
 
-result_song = song_analysis(result_table_all, 73, model_name, model_name_mel)
+result_song = song_analysis(result_table_all, 197, model_name, model_name_mel)
 
 
 #%%
