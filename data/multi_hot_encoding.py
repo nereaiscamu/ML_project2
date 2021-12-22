@@ -80,9 +80,9 @@ def preprocess_chords(beats, mel_included = False):
     ''' Remove or change useless information'''
 
     beats['chord_map'] = beats['chord_info']
-    beats['chord_map'] = beats['chord_map'].str.replace('\/(.*)','')
-    beats['chord_map'] = beats['chord_map'].str.replace('m','-')
-    beats['chord_map'] = beats['chord_map'].str.replace('7alt','7')
+    beats['chord_map'] = beats['chord_map'].str.replace('\/(.*)','', regex=True)
+    beats['chord_map'] = beats['chord_map'].str.replace('m','-', regex=True)
+    beats['chord_map'] = beats['chord_map'].str.replace('7alt','7', regex=True)
     
     old_added_notes = ['9#','9b', '9', '11b', '11#', '11', '13b', '13#', '13']
     
@@ -124,7 +124,7 @@ def preprocess_chords(beats, mel_included = False):
     # (7alt --> mapped to 7)
     remove_note_info = ['-', '+', 'sus',  'b5'] 
     for i in remove_note_info:
-        beats['added_note'] = beats['added_note'].str.replace(i,'')
+        beats['added_note'] = beats['added_note'].str.replace(i,'', regex=True)
     
     # 'C' from  No Chord is removed
     beats['added_note'] = beats['added_note'].str.replace('C','')

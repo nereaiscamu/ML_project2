@@ -71,7 +71,7 @@ def evaluate_model(model, dataset, device):
         correct += (preds[mask] == targets[mask]).sum()
         total += sum(mask)
     
-
+    total = total.cpu().numpy()
     acc = 100 * correct.item()/total    
     return acc
          

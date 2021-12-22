@@ -7,6 +7,8 @@ import numpy as np
 import plotly.express as px
 import plotly.io as pio
 import pandas as pd
+# Suppress "A value is trying to be set on a copy of a slice from a DataFrame"
+pd.options.mode.chained_assignment = None  # default='warn'
 import pdb 
 import os
 import matplotlib.pyplot as plt
@@ -49,13 +51,60 @@ do_compare_accuracies = True
 # general functions
 correct_chords = lambda x: sum(x)/len(x)*100
 num_chords = lambda x: len(x)
-
 #%%
 
 # Load models
 song_list, song_length, song_accuracy, preds, targets = load_model(model_path, dataset, hidden_dim, layers, seed, song_input=True)
+#pdb.set_trace()      
+
 song_list_mel, song_length_mel, song_accuracy_mel, preds_mel, targets_mel = load_model(model_path_mel, dataset_mel, hidden_dim, layers, seed, song_input=True)
-        
+
+total_minor = 0
+correct_minor_d1 = 0
+correct_minor_d4 = 0
+counter_total_chords = 0
+pred_minor_d1 = 0
+pred_minor_d4 = 0
+major_chords = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B', 'C6', 'C7', 'D6', 'D7', 'E6', 'E7', 'F6', 'F7', 'G6', 'G7', 'A6', 'A7', 'B6', 'B7']
+for idx_song, song in enumerate(targets):
+    if len(song) > 0:
+        chords = song.values.flatten()
+        for idx_chord, chord in enumerate(chords):
+            # if chord in major_chords:
+            #     total_minor += 1
+            #     if chord == preds[idx_song][0][idx_chord]:
+            #         correct_minor_d1 += 1
+            #     if chord == preds_mel[idx_song][0][idx_chord]:
+            #         correct_minor_d4 += 1
+            #     if '-' in preds[idx_song][0][idx_chord]:
+            #         pred_minor_d1 += 1
+            #     if '-' in preds_mel[idx_song][0][idx_chord]:
+            #         pred_minor_d4 += 1
+            #     #else:
+            #     print("Target: ", chord, ", Pred_d1: ", preds[idx_song][0][idx_chord], " Pred_d4: ", preds_mel[idx_song][0][idx_chord])
+            # counter_total_chords += 1
+            if len(chord) <= 3 and not '-' in chord and not '+' in chord and not 'sus' in chord and not 'o' in chord and not 'sus' in chord and not 'j' in chord and not 'alt' in chord:
+                total_minor += 1
+                if chord == preds[idx_song][0][idx_chord]:
+                    correct_minor_d1 += 1
+                if chord == preds_mel[idx_song][0][idx_chord]:
+                    correct_minor_d4 += 1
+                
+                #else:
+                print("Target: ", chord, ", Pred_d1: ", preds[idx_song][0][idx_chord], " Pred_d4: ", preds_mel[idx_song][0][idx_chord])
+            if '-' in preds[idx_song][0][idx_chord]:
+                pred_minor_d1 += 1
+            if '-' in preds_mel[idx_song][0][idx_chord]:
+                pred_minor_d4 += 1
+            counter_total_chords += 1
+acc_minor_d1 = correct_minor_d1 / total_minor
+acc_minor_d4 = correct_minor_d4 / total_minor
+print("Total chords: ", counter_total_chords)
+print("Acc minor d1: ", acc_minor_d1)
+print("Acc minor d4: ", acc_minor_d4)
+print("Minor d1: ", pred_minor_d1)
+print("Minor d4: ", pred_minor_d4)
+
 
 #%%
 
@@ -147,14 +196,14 @@ def F_score(result_table, train_chord_size):
     # 1- Compute recall 
     Recall_Chords = result_table.groupby(
         by=["Target_Chords"]).agg({'Correct': [num_chords, correct_chords] }).reset_index()
-    Recall_Chords.columns = ["_".join(x) for x in Recall_Chords.columns.ravel()]
+    Recall_Chords.columns = ["_".join(x) for x in Recall_Chords.columns.values]
     Recall_Chords = Recall_Chords.rename(columns={'Target_Chords_': 'Target_Chords', 
                                                   'Correct_<lambda_0>': "Sample_Size", 
                                                   'Correct_<lambda_1>': "recall"})
     # 2- Compute prediction 
     Prediction_Chords = result_table.groupby(
         by=["Pred_Chords"]).agg({'Correct': [num_chords, correct_chords] }).reset_index()
-    Prediction_Chords.columns = ["_".join(x) for x in Prediction_Chords.columns.ravel()]
+    Prediction_Chords.columns = ["_".join(x) for x in Prediction_Chords.columns.values]
     Prediction_Chords = Prediction_Chords.rename(columns={'Pred_Chords_': 'Pred_Chords', 
                                                           'Correct_<lambda_0>': "Sample_Size", 
                                                           'Correct_<lambda_1>': "precision"})
@@ -173,7 +222,7 @@ def F_score(result_table, train_chord_size):
 def accuracy_chord_idx(result_table):
     Acc_chord_idx = result_table.groupby(
         by=["Chord_idx"]).agg({'Correct': [num_chords, correct_chords] }).reset_index()
-    Acc_chord_idx.columns = ["_".join(x) for x in Acc_chord_idx.columns.ravel()]
+    Acc_chord_idx.columns = ["_".join(x) for x in Acc_chord_idx.columns.values]
     Acc_chord_idx = Acc_chord_idx.rename(columns={'Chord_idx_': 'Chord_idx', 'Correct_<lambda_0>': "Sample_Size", 
                                     'Correct_<lambda_1>': "Chord_Accuracy"})
     Acc_chord_idx = Acc_chord_idx.loc[Acc_chord_idx['Sample_Size']>=15]
@@ -184,7 +233,7 @@ def accuracy_chord_idx(result_table):
 def target_seq_accuracy(result_table):
     target_seq_accuracy = result_table.groupby(
         by=["Target_Seq"]).agg({'Correct': [num_chords, correct_chords] }).reset_index()
-    target_seq_accuracy.columns = ["_".join(x) for x in target_seq_accuracy.columns.ravel()]
+    target_seq_accuracy.columns = ["_".join(x) for x in target_seq_accuracy.columns.values]
     target_seq_accuracy = target_seq_accuracy.rename(columns={'Target_Seq_': 'Target_Seq', 'Correct_<lambda_0>': "Seq_Sample_Size", 
                                     'Correct_<lambda_1>': "Seq_Accuracy"})
     target_seq_accuracy = target_seq_accuracy.sort_values(by = 'Seq_Accuracy')
@@ -244,7 +293,7 @@ def added_note_vector(df, var, added_note_var, added_note_var_cor,t_root, p_root
     # (7alt --> mapped to 7)
     remove_note_info = ['-', '+', 'sus',  'b5', 'alt'] 
     for i in remove_note_info:
-        df[added_note_var] = df[added_note_var].str.replace(i,'')
+        df[added_note_var] = df[added_note_var].str.replace(i,'', regex=True)
     
     # in the added note, diminished is only kept when it affects the 7th note
     # if only for the triad, already in the previous vector
@@ -308,7 +357,7 @@ def get_decoded_melody(melid):
     seq_melody = get_dataset_multi_hot(choice=4, return_mel_id=melid)
     # Remove -1s from sequences
     seq_melody = [[elem for elem in seq if elem != -1] for seq in seq_melody]
-    decoded_mel = [list(pd.Series(seq).map(dict)) for seq in seq_melody]
+    decoded_mel = [list(pd.Series(seq, dtype='object').map(dict)) for seq in seq_melody]
 
     return decoded_mel
 
@@ -398,7 +447,7 @@ target_seq_accuracy_mel = target_seq_accuracy(result_table_mel)
 #%%
 
 
-result_song = song_analysis(result_table_all, 197, model_name, model_name_mel)
+result_song = song_analysis(result_table_all, 92, model_name, model_name_mel)
 
 
 #%%
