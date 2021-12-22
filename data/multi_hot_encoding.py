@@ -513,7 +513,7 @@ def get_dataset_multi_hot(choice=1, val_split=0.1, test_split=0.1, seed=42, get_
     return train_dataset, val_dataset, test_dataset, input_size, target_size
 
 
-def get_dataset_multi_hot_without_split(choice=1, test_split=0.1):
+def get_dataset_multi_hot_without_split(choice=1):
     '''
     Generate train and test dataset. Based on dataset choice
     choice:

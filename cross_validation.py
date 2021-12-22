@@ -9,13 +9,11 @@ import collections
 import matplotlib.pyplot as plt
 import sys
 sys.path.append('./Data/')
-from one_hot_encoding import get_dataset_one_hot
-from multi_hot_encoding import get_dataset_multi_hot, get_dataset_multi_hot_without_split
-from models.lstm_chord_models import LSTMChord, LSTMChordEmbedding, LSTMChordEmbedding_Multihot
-from models.lstm_melody_models import LSTM_Multihot, LSTM_Multihot_MLP
+from multi_hot_encoding import get_dataset_multi_hot_without_split
+from models.lstm_melody_models import LSTM_Multihot
 from argparse import ArgumentParser
 from sklearn.model_selection import KFold
-import statistics
+import pickle
 import pdb
 
 # Andrew's
@@ -34,14 +32,13 @@ def get_accuracy_vl(outputs, targets):
 
   return 100 * (flat_outputs[mask] == flat_targets[mask]).sum() / sum(mask)
 
-def get_val_loss(model, val_loader):
+def get_val_loss(model, val_loader, device):
     model.eval()
-    #val_loader = DataLoader(val_dataset, batch_size=len(val_dataset), shuffle=False) 
 
-    for batch_idx, batch in enumerate(val_loader):
-        inputs = batch["input"].float()
+    for _, batch in enumerate(val_loader):
+        inputs = batch["input"].float().to(device)
         lengths = batch["length"]
-        targets = batch["target"][:, :max(lengths)]
+        targets = batch["target"][:, :max(lengths)].to(device)
 
         outputs = model(inputs, lengths)
         loss = get_loss_vl(outputs, targets)
@@ -50,8 +47,7 @@ def get_val_loss(model, val_loader):
 
 
 # DM
-def evaluate_model(model, loader=None, dataset=None):
-    # TODO idk if this is the best way to load test data. what is the role of batch_size here?
+def evaluate_model(model, device, loader=None, dataset=None):
     model.eval()
     if dataset != None:
         loader = DataLoader(dataset, batch_size=len(dataset), shuffle=False) 
@@ -60,10 +56,10 @@ def evaluate_model(model, loader=None, dataset=None):
 
     correct = 0
     total = 0
-    for batch_idx, batch in enumerate(loader):
-        inputs = batch["input"].float()
+    for _, batch in enumerate(loader):
+        inputs = batch["input"].float().to(device)
         lengths = batch["length"]
-        targets = batch["target"][:, :max(lengths)]
+        targets = batch["target"][:, :max(lengths)].to(device)
 
         preds = model(inputs, lengths)
         preds = preds.argmax(dim=2).flatten()
@@ -75,28 +71,17 @@ def evaluate_model(model, loader=None, dataset=None):
         correct += (preds[mask] == targets[mask]).sum()
         total += sum(mask)
     
-
+    total = total.cpu().numpy()
     acc = 100 * correct.item()/total    
     return acc
 
 
-def split_dataset(dataset, val_split=0.1, test_split=0.1):
+def split_dataset(dataset):
     """
     Splits the dataset in 80% train, 10% validation, 10% test
     """
     # Split Train/Val/Test
     len_dataset = len(dataset)
-    # random_idxs = np.random.RandomState(seed=42).permutation(len_dataset)    # this randomState has a localized effect, so the permutation will be the same always (and can use test set in load_model)
-    # split_1 = int(len_dataset*(1-test_split-val_split))
-    # split_2 = int(len_dataset*(1-test_split))
-
-    # train_idxs = random_idxs[:split_1]
-    # val_idxs = random_idxs[split_1:split_2]
-    # test_idxs = random_idxs[split_2:]
-
-    # train_set = dataset[train_idxs]
-    # val_set = dataset[val_idxs]
-    # test_set = dataset[test_idxs]
 
     len_tr = int(0.8*len_dataset)
     len_rem = len_dataset - len_tr
@@ -115,14 +100,21 @@ def train(args):
     # Configurations
     batch_size = 20
     k_folds = 4
-    epochs = 200
-    early_stopping = 15
-    torch.manual_seed(42)
+    epochs = args.max_epochs
+    early_stopping = args.early_stopping
+    torch.manual_seed(args.seed)
+    cuda = torch.cuda.is_available()
+    device = torch.device("cuda" if cuda else "cpu")
 
-    #train_dataset, val_dataset, test_dataset, input_size, target_size = get_dataset_multi_hot_new_encoding(choice=2)
-    #train_dataset, val_dataset, test_dataset, input_size, target_size = get_dataset_multi_hot(choice=8)
-    dataset, input_size, target_size = get_dataset_multi_hot_without_split(choice=7)
+    if args.use_saved_dataset:
+        with open('data/datasets/dataset' + str(args.dataset) + '.pickle', 'rb') as f:
+            dataset, input_size, target_size = pickle.load(f)
+        print('*** Dataset ' + str(args.dataset) + ' loaded from file ***')
+    else:
+        dataset, input_size, target_size = get_dataset_multi_hot_without_split(choice=args.dataset)
+    
     train_set, val_set, test_set = split_dataset(dataset)
+
     print('Dataset length:   %d' % len(dataset))
     print('Train set length: %d' % len(train_set))
     print('Val set length:   %d' % len(val_set))
@@ -158,32 +150,32 @@ def train(args):
         #train_subsampler = torch.utils.data.SubsetRandomSampler(train_ids)
         #val_subsampler = torch.utils.data.SubsetRandomSampler(val_ids)
 
-        #train_loader = DataLoader(dataset, batch_size=batch_size, sampler=train_subsampler) 
         train_loader = DataLoader(cross_set, batch_size=batch_size, sampler=train_ids) 
-        #val_loader = DataLoader(dataset, batch_size=batch_size, sampler=val_subsampler)
         val_loader = DataLoader(cross_set, batch_size=batch_size, sampler=val_ids)
 
         # Create model
-        #model = LSTMChord(vocab_size, lstm_hidden_size=16)
-        #model = LSTMChordEmbedding(vocab_size, embed_size=16, lstm_hidden_size=16)
-        model = LSTM_Multihot(input_size, embed_size=64, lstm_hidden_size=64, target_size=target_size, num_layers=2, dropout_linear=0.4, dropout_lstm=0.4)
-        #model = LSTM_Multihot_MLP(input_size, embed_size=64, lstm_hidden_size=64, target_size=target_size, num_layers=2, dropout_linear=0.4, dropout_lstm=0.4)
+        model = LSTM_Multihot(input_size, 
+                                    embed_size=args.hidden_dim, 
+                                    lstm_hidden_size=args.hidden_dim, 
+                                    target_size=target_size, 
+                                    num_layers=args.lstm_layers, 
+
+                                    dropout_linear=args.dropout, 
+                                    dropout_lstm=args.dropout)
+
+        model = model.to(device)
 
         # Define training variables
-        #optimizer = optim.Adam(model.parameters(), lr=0.01)
-        optimizer = optim.Adam(model.parameters(), lr=0.01, weight_decay=1e-4)
-        #optimizer = optim.Adam(model.parameters(), lr=0.01, weight_decay=0.00001)
-        #optimizer = optim.SGD(model.parameters(), lr=0.0005)
-        #optimizer = optim.SGD(model.parameters(), lr=0.0001, momentum=0.9)
+        optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.wd)
 
 
         for epoch in range(epochs):
             model.train()
             epoch_loss = 0
             for _, batch in enumerate(train_loader, 0):
-                inputs = batch["input"].float()
+                inputs = batch["input"].float().to(device)
                 lengths = batch["length"]
-                targets = batch["target"][:, :max(lengths)] 
+                targets = batch["target"][:, :max(lengths)].to(device)
 
                 optimizer.zero_grad()
                 outputs = model(inputs, lengths)
@@ -198,9 +190,9 @@ def train(args):
 
             model.eval()
             train_losses_fold.append(epoch_loss)
-            val_losses_fold.append(get_val_loss(model, val_loader))
-            train_accuracies_fold.append(evaluate_model(model, loader=train_loader))
-            val_accuracies_fold.append(evaluate_model(model, loader=val_loader))
+            val_losses_fold.append(get_val_loss(model, val_loader, device))
+            train_accuracies_fold.append(evaluate_model(model, device, loader=train_loader))
+            val_accuracies_fold.append(evaluate_model(model, device, loader=val_loader))
             print("EPOCH %.2d\tTrain/val loss: \t%.4f\t%.4f\t\tTrain/val accuracy: \t%.2f\t%.2f" % (epoch, epoch_loss, val_losses_fold[-1], train_accuracies_fold[-1], val_accuracies_fold[-1]))
 
             # Early stopping based on the validation set:
@@ -214,10 +206,6 @@ def train(args):
                 print("\nNo improvement found during the last %d epochs, stopping optimization.\n" % early_stopping)
                 break
 
-            # losses.append(val_losses_fold[-1])
-            # if len(losses) == early_stopping and losses[-1] >= max(losses):
-            #     break
-
             if epoch == 50 or epoch == 100 or epoch == 150:
                 for g in optimizer.param_groups:
                     g['lr'] /= 2
@@ -225,11 +213,11 @@ def train(args):
         models.append(model)
         
         # EVALUATE
-        tr_acc = evaluate_model(model, dataset=train_set)
+        tr_acc = evaluate_model(model, device, dataset=train_set)
         print('\nTrain accuracy:\t%.2f' % tr_acc)
-        val_acc = evaluate_model(model, dataset=val_set)
+        val_acc = evaluate_model(model, device, dataset=val_set)
         print('Val accuracy:\t%.2f' % val_acc)
-        te_acc = evaluate_model(model, dataset=test_set)
+        te_acc = evaluate_model(model, device, dataset=test_set)
         print('Test accuracy:\t%.2f\n' % te_acc)
 
         train_losses.append(train_losses_fold)
@@ -315,24 +303,29 @@ def plot_accuracies(train_accuracies, val_accuracies, name='acc.png'):
     plt.savefig('figs_results/' + name)
     plt.show()
 
+
 if __name__ == "__main__":
     np.random.seed(42)
 
     parser = ArgumentParser(description='Train a model')
+
+    parser.add_argument('--dataset', type=int, default=1)
+    parser.add_argument('--hidden-dim', type=int, default=192)
+    parser.add_argument('--lstm-layers', type=int, default=2)
+    parser.add_argument('--max-epochs', type=int, default=200)
+    parser.add_argument('--early-stopping', type=int, default=15)
+    parser.add_argument('--seed', type=int, default=42)
+    parser.add_argument('--lr', type=float, default=0.007)
+    parser.add_argument('--wd', type=float, default=5e-6)
+    parser.add_argument('--dropout', type=float, default=0.2)
+    parser.add_argument('--use-saved-dataset', type=bool, default=False)
+
+
     parser.add_argument('--save-path', type=str,
-                        # required=True,
                         #default=None,
-                        default='models/trained_models/model_name.pth',
-                        help='')
-    parser.add_argument('--load-path', type=str,
-                        # required=True,
-                        default=None,
-                        #default='models/trained_models/model_1_dataset_1_s42.pth',
+                        default='models/trained_models/optimized_192_2_dataset_1_new.pth',
                         help='')
 
     args = parser.parse_args()
 
-    # if args.load_path is not None:
-    #     load_model(args.load_path)
-    # else:
     train(args)

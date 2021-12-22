@@ -206,7 +206,7 @@ class MultiHot_MelodyBassEncoded_VLDataset(Dataset):
 
 class MultiHot_MelodyDurationEncoded_VLDataset(Dataset):
     '''
-    Variable length dataset for multi-hot CHORD and MELODY embedding
+    Variable length dataset for multi-hot CHORD and MELODY embedding with weighted melody duration
     '''
     def __init__(self, sequences, melody_encoding, target_sequence, vocab_sizes):
         self.sequences = sequences
@@ -255,12 +255,6 @@ class MultiHot_MelodyDurationEncoded_VLDataset(Dataset):
             duration_seq = np.array(duration_seq)
             duration_seq = np.where(duration_seq < 0, 0, duration_seq)
 
-            #Create weighted array
-            # divider = np.arange(float(2*len(pitch_seq)), step=2)
-            # divider[0] = 1.0
-            # divider = divider[::-1]
-
-            # TODO series gets too big if we take all the notes
             divider = np.geomspace(1, np.power(2, len(pitch_seq)-1), num=len(pitch_seq))
             divider = np.flipud(divider)
 
@@ -283,7 +277,7 @@ class MultiHot_MelodyDurationEncoded_VLDataset(Dataset):
 
 class MultiHot_MelodyWeighted_VLDataset(Dataset):
     '''
-    Variable length dataset for multi-hot CHORD and MELODY embedding
+    Variable length dataset for multi-hot CHORD and MELODY embedding with weighted melody
     '''
     def __init__(self, sequences, melody_encoding, target_sequence, vocab_sizes):
         self.sequences = sequences

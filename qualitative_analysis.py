@@ -58,39 +58,6 @@ song_list, song_length, song_accuracy, preds, targets = load_model(model_path, d
 song_list_mel, song_length_mel, song_accuracy_mel, preds_mel, targets_mel = load_model(model_path_mel, dataset_mel, hidden_dim, layers, seed, song_input=True)
 
 
-def compare_dominent_with_minor(targets, preds, preds_mel):
-    total_dominent = 0
-    correct_dominent_d1 = 0
-    correct_dominent_d4 = 0
-    counter_total_chords = 0
-    pred_dominent_d1 = 0
-    pred_dominent_d4 = 0
-    for idx_song, song in enumerate(targets):
-        if len(song) > 0:
-            chords = song.values.flatten()
-            for idx_chord, chord in enumerate(chords):
-                if len(chord) <= 3 and not '-' in chord and not '+' in chord and not 'sus' in chord and not 'o' in chord and not 'sus' in chord and not 'j' in chord and not 'alt' in chord:
-                    total_dominent += 1
-                    if chord == preds[idx_song][0][idx_chord]:
-                        correct_dominent_d1 += 1
-                    if chord == preds_mel[idx_song][0][idx_chord]:
-                        correct_dominent_d4 += 1
-    #               print("Target: ", chord, ", Pred_d1: ", preds[idx_song][0][idx_chord], " Pred_d4: ", preds_mel[idx_song][0][idx_chord])
-                    if '-' in preds[idx_song][0][idx_chord]:
-                        pred_dominent_d1 += 1
-                    if '-' in preds_mel[idx_song][0][idx_chord]:
-                        pred_dominent_d4 += 1
-                counter_total_chords += 1
-    acc_dominent_d1 = correct_dominent_d1 / total_dominent
-    acc_dominent_d4 = correct_dominent_d4 / total_dominent
-    print("\nTotal chords: ", counter_total_chords)
-    print("Accuracy dominent d1: ", acc_dominent_d1)
-    print("Accuracy dominent d4: ", acc_dominent_d4)
-    print("Number of wrongly predictated minor instead of dominent d1: ", pred_dominent_d1)
-    print("Number of wrongly predictated minor instead of dominent d4: ", pred_dominent_d4)
-
-#compare_dominent_with_minor(targets, preds, preds_mel)
-
 
 #%%
 
@@ -375,6 +342,39 @@ def song_analysis(df, song_id, model_name, model_name_mel):
                       sep=';', header=True, index=False)
     return result_song
 
+
+def compare_dominent_with_minor(targets, preds, preds_mel):
+    total_dominent = 0
+    correct_dominent_d1 = 0
+    correct_dominent_d4 = 0
+    counter_total_chords = 0
+    pred_dominent_d1 = 0
+    pred_dominent_d4 = 0
+    for idx_song, song in enumerate(targets):
+        if len(song) > 0:
+            chords = song.values.flatten()
+            for idx_chord, chord in enumerate(chords):
+                if len(chord) <= 3 and not '-' in chord and not '+' in chord and not 'sus' in chord and not 'o' in chord and not 'sus' in chord and not 'j' in chord and not 'alt' in chord:
+                    total_dominent += 1
+                    if chord == preds[idx_song][0][idx_chord]:
+                        correct_dominent_d1 += 1
+                    if chord == preds_mel[idx_song][0][idx_chord]:
+                        correct_dominent_d4 += 1
+                    #print("Target: ", chord, ", Pred_d1: ", preds[idx_song][0][idx_chord], " Pred_d4: ", preds_mel[idx_song][0][idx_chord])
+                    if '-' in preds[idx_song][0][idx_chord]:
+                        pred_dominent_d1 += 1
+                    if '-' in preds_mel[idx_song][0][idx_chord]:
+                        pred_dominent_d4 += 1
+                counter_total_chords += 1
+    acc_dominent_d1 = correct_dominent_d1 / total_dominent
+    acc_dominent_d4 = correct_dominent_d4 / total_dominent
+    print("\nTotal chords: ", counter_total_chords)
+    print("Accuracy dominent d1: ", acc_dominent_d1)
+    print("Accuracy dominent d4: ", acc_dominent_d4)
+    print("Number of wrongly predictated minor instead of dominent d1: ", pred_dominent_d1)
+    print("Number of wrongly predictated minor instead of dominent d4: ", pred_dominent_d4)
+
+#compare_dominent_with_minor(targets, preds, preds_mel)
 #%% Creating the main tables
 
 train_table = create_train_table(dataset, seed)

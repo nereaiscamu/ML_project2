@@ -22,7 +22,7 @@ def load_model(load_path, dataset, hidden_dim, layers, seed=42, song_input=True)
     cuda = torch.cuda.is_available()
     device = torch.device("cuda" if cuda else "cpu")
     device = torch.device("cpu")
-
+    
     train_dataset, val_dataset, test_dataset, input_size, target_size, song_ids = get_dataset_multi_hot(choice=dataset, seed=seed, get_song_ids=True)
     
     len_sequences = len(train_dataset) + len(val_dataset) + len(test_dataset)
@@ -83,6 +83,7 @@ def load_model(load_path, dataset, hidden_dim, layers, seed=42, song_input=True)
         print('\nTest dataset of length %d. Enter the index of a sample, or \'enter\' to skip :' % len(test_dataset))
         input_ = input()
         if input_ == '':
+            print("Skipped current dataset, continuing now!")
             break
         sample_id = int(input_)
         assert sample_id < len(test_dataset) and sample_id >= 0, 'Invalid sample index'

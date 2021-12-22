@@ -73,17 +73,14 @@ def encode_pitch(df_melody, df_beats, pitch_sequence=False):
     df_beats_mel['bass_pitch_sequence'] = df_beats_mel['pitch_sequence']
     df_beats_mel['duration_sequence'] = df_beats_mel['pitch_sequence']
 
-    # Set sequence to last chord
-    # TODO decrease running time if possible
+    # Set sequence to last played chord
     for idx, _ in df_beats_mel.iterrows():
         if df_beats_mel.at[idx, 'pitch_sequence'] == True:
             df_beats_mel.at[idx, 'pitch_sequence'] = pitch_sequences.pop(0)
             df_beats_mel.at[idx, 'bass_pitch_sequence'] = bass_pitch_sequences.pop(0)
             df_beats_mel.at[idx, 'duration_sequence'] = duration_sequence.pop(0)
 
-    # melody_encoded = [np.zeros(max_pitch) for _ in range(len(df_beats_mel))]
-    # df_beats_mel['melody_encoded'] = melody_encoded
     df_beats_mel.drop(['bass_pitch_encoded', 'chord_changed'], axis=1, inplace=True)
     df_beats_mel.drop(df_beats_mel[df_beats_mel['pitch_sequence'] == False].index, inplace=True)
-
+    
     return df_beats_mel

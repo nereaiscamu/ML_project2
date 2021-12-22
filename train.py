@@ -4,7 +4,6 @@ import torch.optim as optim
 import torch
 import torch.nn.functional as F
 import numpy as np
-import collections
 import matplotlib.pyplot as plt
 import sys
 sys.path.append('./data/')
@@ -16,6 +15,8 @@ from argparse import ArgumentParser
 import pickle
 import pdb
 import pandas as pd
+# Suppress warning "A value is trying to be set on a copy of a slice from a DataFrame"
+pd.options.mode.chained_assignment = None  # default='warn'
 
 # Andrew's
 def get_loss_vl(outputs, targets):
@@ -25,19 +26,25 @@ def get_loss_vl(outputs, targets):
 
 # Andrew's
 def get_accuracy_vl(outputs, targets):
-  flat_outputs = outputs.argmax(dim=2).flatten()
-  flat_targets = targets.flatten()
+    """
+    
+    """
+    flat_outputs = outputs.argmax(dim=2).flatten()
+    flat_targets = targets.flatten()
 
-  # Mask the outputs and targets
-  mask = flat_targets != -1
+    # Mask the outputs and targets
+    mask = flat_targets != -1
 
-  return 100 * (flat_outputs[mask] == flat_targets[mask]).sum() / sum(mask)
+    return 100 * (flat_outputs[mask] == flat_targets[mask]).sum() / sum(mask)
 
 def get_val_loss(model, val_dataset, device):
+    """
+    
+    """
     model.eval()
     val_loader = DataLoader(val_dataset, batch_size=len(val_dataset), shuffle=False) 
 
-    for batch_idx, batch in enumerate(val_loader):
+    for _, batch in enumerate(val_loader):
         inputs = batch["input"].float().to(device)
         targets = batch["target"].to(device)
         lengths = batch["length"]
@@ -50,13 +57,15 @@ def get_val_loss(model, val_dataset, device):
 
 # DM
 def evaluate_model(model, dataset, device):
-    # TODO idk if this is the best way to load test data. what is the role of batch_size here?
+    """
+    
+    """
     model.eval()
     loader = DataLoader(dataset, batch_size=len(dataset), shuffle=False) 
 
     correct = 0
     total = 0
-    for batch_idx, batch in enumerate(loader):
+    for _, batch in enumerate(loader):
         inputs = batch["input"].float().to(device)
         targets = batch["target"].to(device)
         lengths = batch["length"]
@@ -81,11 +90,7 @@ def train(args):
     # 354 training samples
     batch_size = 20
 
-    print(torch.__version__)
-    device = torch.device("cuda:0") # Uncomment this to run on GPU
-    print(str(device))
     cuda = torch.cuda.is_available()
-    print("Cuda available: " + str(cuda))
     device = torch.device("cuda" if cuda else "cpu")
 
     if args.use_saved_dataset:
@@ -98,8 +103,6 @@ def train(args):
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True) 
     
     # Create model
-    #model = LSTMChord(vocab_size, lstm_hidden_size=16)
-    #model = LSTMChordEmbedding(vocab_size, embed_size=16, lstm_hidden_size=16)
     model = LSTM_Multihot(input_size, 
                             embed_size=args.hidden_dim, 
                             lstm_hidden_size=args.hidden_dim, 
@@ -109,7 +112,6 @@ def train(args):
                             dropout_linear=args.dropout, 
                             dropout_lstm=args.dropout)
 
-    #model = LSTM_Multihot_MLP(input_size, embed_size=64, lstm_hidden_size=64, target_size=target_size, num_layers=2, dropout_linear=0.4, dropout_lstm=0.4)
     model = model.to(device)
 
     # Define training variables
@@ -128,7 +130,7 @@ def train(args):
     for epoch in range(epochs):
         model.train()
         epoch_loss = 0
-        for batch_idx, batch in enumerate(train_loader):
+        for _, batch in enumerate(train_loader):
             inputs = batch["input"].float().to(device)
             lengths = batch["length"]
             targets = batch["target"][:, :max(lengths)].to(device)
@@ -165,7 +167,7 @@ def train(args):
         if epoch > 40 and val_accuracies[-1] < 10:
             break
 
-        print("EPOCH %d\tTrain/val loss: %.2f / %.2f\tLower loss: %.2f\tTrain/val accuracy: \t%.2f / %.2f" % (epoch, epoch_loss, val_losses[-1], best_cost, train_accuracies[-1], val_accuracies[-1]))
+        print("EPOCH %.2d\tTrain/val loss: %.2f / %.2f\tLower loss: %.2f\tTrain/val accuracy: \t%.2f / %.2f" % (epoch, epoch_loss, val_losses[-1], best_cost, train_accuracies[-1], val_accuracies[-1]))
 
         
         if epoch == 50 or epoch == 100 or epoch == 150:
