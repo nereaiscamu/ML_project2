@@ -42,7 +42,7 @@ chords_count_discard = chords_count[(chords_count<10)]
 # df_beats_mel = df_chords_new.merge(df_melody_new, left_on=new_index, right_on=new_index, how='outer')
 # df_beats_mel = df_beats_mel.reset_index(drop=False)
 
-beats_song = beats.loc[beats['melid'] == 187]
+
 
 
 #%%  Dataset 1: Basic dataset with only root pitches. Vocab size = 13. One-hot

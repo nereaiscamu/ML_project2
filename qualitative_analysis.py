@@ -35,7 +35,7 @@ dataset_mel = 4
 
 project_path = "C:/Users/nerea/OneDrive/Documentos/GitHub/ML_project2" #to change
 project_path = os.getcwd()
-result_analysis_path = pathlib.os.path.join(project_path,'result_analysis')
+result_analysis_path = pathlib.os.path.join(project_path,'result_analysis/Report')
 
 hidden_dim = 192
 layers = 2
@@ -46,7 +46,7 @@ seed = 42
 do_conf_matrix_all_songs = False
 
 # Whether or not to compare song accuracies
-do_compare_accuracies = True
+do_compare_accuracies = False
 
 # general functions
 correct_chords = lambda x: sum(x)/len(x)*100
@@ -54,10 +54,9 @@ num_chords = lambda x: len(x)
 #%%
 
 # Load models
-song_list, song_length, song_accuracy, preds, targets = load_model(model_path, dataset, hidden_dim, layers, seed, song_input=True)
-song_list_mel, song_length_mel, song_accuracy_mel, preds_mel, targets_mel = load_model(model_path_mel, dataset_mel, hidden_dim, layers, seed, song_input=True)
-
-
+song_list, song_length, song_accuracy, preds, targets = load_model(model_path, dataset, hidden_dim, layers, seed, song_input=False)
+song_list_mel, song_length_mel, song_accuracy_mel, preds_mel, targets_mel = load_model(model_path_mel, dataset_mel, hidden_dim, layers, seed, song_input=False)
+        
 
 #%%
 
@@ -105,6 +104,13 @@ def create_result_table(song_list, song_length, song_accuracy, preds, targets):
         
     result_table['Previous_target'] = prev_chord
     result_table['Target_Seq'] =  result_table['Previous_target'].str.cat(result_table['Target_Chords'])
+
+    # compute accuracy when previous chord was correct
+    result_table['correct_prev_c'] = result_table.Correct.shift(1) * result_table.Correct
+    result_table.loc[0, 'prec_correct'] = 0
+    result_table['correct_prev_inc'] = - (result_table.Correct.shift(1)-1) * (result_table.Correct)
+    result_table.loc[0, 'correct_prev_inc'] = 0
+
     return result_table, results_numbers
 
 def create_train_table(dataset, seed):
@@ -212,8 +218,6 @@ def root_pitch(result_table, root_type, chord_type, mod_type):
     # df.loc[(df['Correct'] == 0) & (df['p_root'] == df['t_root']), 'p_root'] = 'wrong extra'
     return result_table
 
-''' TRIAD VECTOR '''
-
 def triad_vector(df, var, mod_vector, chord_info_name, triad_var, triad_var_corr, t_root, p_root ):
     mods_to_keep = ['#', 'b']
     df.loc[ ~df[mod_vector].isin(mods_to_keep), chord_info_name] = df[var].str.slice(start = 1)
@@ -236,15 +240,15 @@ def triad_vector(df, var, mod_vector, chord_info_name, triad_var, triad_var_corr
     return df
 
 
-''' ADDED NOTE VECTOR '''
 
-def added_note_vector(df, var, added_note_var, added_note_var_cor,t_root, p_root ):   
+def added_note_vector(df, var, added_note_var, added_note_var_cor, t_triad, p_triad_corr):   
+
     df[added_note_var] = df[var]
 
     
     #remove all information which is already in the triad form vector 
     # (7alt --> mapped to 7)
-    remove_note_info = ['-', '+', 'sus',  'b5', 'alt'] 
+    remove_note_info = ['-', '+', 'sus',  'b5'] 
     for i in remove_note_info:
         df[added_note_var] = df[added_note_var].str.replace(i,'', regex=True)
     
@@ -255,11 +259,9 @@ def added_note_vector(df, var, added_note_var, added_note_var_cor,t_root, p_root
     df.loc[df[added_note_var] == '', added_note_var] = 'none'
     
     df[added_note_var_cor] = df[added_note_var]
-    df.loc[ df[t_root] != df[p_root] , added_note_var_cor] = 'wrong_root'
+    df.loc[ df[t_triad]!=df[p_triad_corr], added_note_var_cor] = 'wrong_chord'
     
     return df
-
-
 
 def separating_vectors_acc(df):
     result_table = df
@@ -271,14 +273,18 @@ def separating_vectors_acc(df):
     result_table = triad_vector(result_table, 'Pred_Chords', 'p_mod', 
                             'chord_info_P', 'triad_P', 'triad_P_corr', 
                             't_root', 'p_root' ) 
-    result_table = added_note_vector(result_table, 'chord_info_T', 'added_note_T', 'added_note_T_corr','t_root', 'p_root')
-    result_table = added_note_vector(result_table, 'chord_info_P', 'added_note_P', 'added_note_P_corr','t_root', 'p_root')
+    result_table = added_note_vector(result_table, 'chord_info_T', 'added_note_T', 'added_note_T_corr','triad_T', 'triad_P_corr')
+    result_table = added_note_vector(result_table, 'chord_info_P', 'added_note_P', 'added_note_P_corr','triad_T', 'triad_P_corr')
     return result_table
     
 #%% Creating confusion matrices
 
-def create_save_matrix(df, var1, var2, plot_name, model_name, title=None, show=True):
-    matrix = pd.crosstab(df[var1], df[var2], rownames=['Target'], colnames=['Predicted'], normalize='all').round(4)*100
+def create_save_matrix(df, var1, var2, plot_name, model_name, title=None, show=True, norm='all'):
+    matrix = pd.crosstab(df[var1], df[var2], rownames=['Target'], colnames=['Predicted'], normalize=norm).round(4)*100
+    if norm == 'index':
+        matrix = matrix.round(0).astype(int)
+    else:
+         matrix = matrix.round(1)
     matrix_fig = sn.heatmap(matrix, annot=True)
     plt.title(title)
     if show:
@@ -320,8 +326,8 @@ def song_analysis(df, song_id, model_name, model_name_mel):
     result_song = root_pitch(result_song, 't_root', 'Target_Chords', 't_mod')
     result_song = root_pitch(result_song,'p_root', 'Pred_Chords', 'p_mod')
     result_song = root_pitch(result_song,'p_root_mel', 'Pred_Chords_mel', 'p_mod_mel')
-    create_save_matrix(result_song, 't_root', 'Pred_Root',  str(song_id) + '_roots_crossmatrix.png', model_name, title=None, show=True)
-    create_save_matrix(result_song, 't_root', 'Pred_Root_mel', str(song_id) +'_roots_crossmatrix.png', model_name_mel, title=None, show=True)
+    create_save_matrix(result_song, 't_root', 'Pred_Root',  str(song_id) + '_roots_crossmatrix.png', model_name, title=None, show=True, norm='index') #  norm='index' makes the normalization by rows. Delete if normalization by entire matrix is wanted
+    create_save_matrix(result_song, 't_root', 'Pred_Root_mel', str(song_id) +'_roots_crossmatrix.png', model_name_mel, title=None, show=True, norm='index')
     create_save_matrix(result_song, 'triad_T', 'Pred_triad_form',  str(song_id) + '_triadform_crossmatrix.png', model_name, title=None, show=True)
     create_save_matrix(result_song, 'triad_T', 'Pred_triad_form_mel', str(song_id) + '_triadform_crossmatrix.png', model_name_mel, title=None, show=True)
     create_save_matrix(result_song, 'added_note_T', 'Pred_added_note',  str(song_id) + '_addednote_crossmatrix.png', model_name, title=None, show=True)
@@ -387,6 +393,18 @@ song_acc_diff.to_csv(pathlib.os.path.join(result_analysis_path,'Song Accuracy co
 result_table, results_numbers = create_result_table(song_list, song_length, song_accuracy, preds, targets)
 result_table_mel, results_numbers_mel = create_result_table(song_list_mel, song_length_mel, song_accuracy_mel, preds_mel, targets_mel )
 
+total_samples = len(result_table)
+print('Baseline model:')
+print('Test accuracy: %.2f' % (result_table.Correct.sum() / total_samples * 100))
+print('Accuracy | Prev. correct: %.2f' % (result_table.correct_prev_c.sum() / result_table.Correct.sum() * 100))
+print('Accuracy | Prev. incorrect: %.2f\n' % (result_table.correct_prev_inc.sum() / (total_samples - result_table.Correct.sum()) * 100))
+
+print('Melody model:')
+print('Test accuracy: %.2f' % (result_table_mel.Correct.sum() / len(result_table_mel) * 100))
+print('Accuracy | Prev. correct: %.2f' % (result_table_mel.correct_prev_c.sum() / result_table_mel.Correct.sum() * 100))
+print('Accuracy | Prev. incorrect: %.2f\n' % (result_table_mel.correct_prev_inc.sum() / (total_samples - result_table_mel.Correct.sum()) * 100))
+
+
 resul_table_sep_vec = separating_vectors_acc(result_table)
 resul_table_sep_vec_mel = separating_vectors_acc(result_table_mel)
 
@@ -406,7 +424,6 @@ result_table_all = result_table_all.rename(columns = {'Pred_Chords_x' : 'Pred_Ch
                                                       'triad_P_corr_y' : 'Pred_triad_form_mel',
                                                       'added_note_P_corr_x' : 'Pred_added_note',
                                                       'added_note_P_corr_y' : 'Pred_added_note_mel'  })
-
 
 if do_conf_matrix_all_songs:
     for i in result_table['Test_sample_ID'].unique():
@@ -433,47 +450,92 @@ target_seq_accuracy_mel = target_seq_accuracy(result_table_mel)
 #%%
 
 
-result_song = song_analysis(result_table_all, 92, model_name, model_name_mel)
+#result_song = song_analysis(result_table_all, 197, model_name, model_name_mel)
 
-
+# histogram of test chords
+# result_table['t_root'].value_counts().plot(kind='bar')
+# plt.show()
 #%%
-create_save_matrix(result_table_all, 't_root', 'Pred_Root',  '_roots_crossmatrix.png', model_name, title=None, show=True)
-create_save_matrix(result_table_all, 't_root', 'Pred_Root_mel',  '_roots_crossmatrix.png', model_name_mel, title=None, show=True)
+create_save_matrix(result_table_all, 't_root', 'Pred_Root',  '_roots_crossmatrix.png', model_name, title=None, show=True, norm='index')  #  norm='index' makes the normalization by rows. Delete if normalization by entire matrix is wanted
+create_save_matrix(result_table_all, 't_root', 'Pred_Root_mel',  '_roots_crossmatrix.png', model_name_mel, title=None, show=True, norm='index')
 
 create_save_matrix(result_table_all, 'triad_T', 'Pred_triad_form',  '_triad_form_crossmatrix.png', model_name, title=None, show=True)
 create_save_matrix(result_table_all, 'triad_T', 'Pred_triad_form_mel',  '_triad_form_crossmatrix.png', model_name_mel, title=None, show=True)
 
 create_save_matrix(result_table_all, 'added_note_T', 'Pred_added_note',  '_added_note_crossmatrix.png', model_name, title=None, show=True)
-create_save_matrix(result_table_all, 'added_note_T', 'Pred_added_note_mel',  '_added_note_crossmatrix.png', model_name_mel, title=None, show=True)# confusion_matrix_root = pd.crosstab(result_table['t_root'], result_table['p_root'], rownames=['Target'], colnames=['Predicted'], 
-#                                normalize='all').round(4)*100
+create_save_matrix(result_table_all, 'added_note_T', 'Pred_added_note_mel',  '_added_note_crossmatrix.png', model_name_mel, title=None, show=True)
   
-# confusion_matrix_triad = pd.crosstab(result_table['triad_T'], result_table['triad_P_corr'], rownames=['Target Triad Form'], colnames=['Predicted Triad Form'], 
-#                                normalize='all').round(4)*100
 
-# confusion_matrix_added_note = pd.crosstab(result_table['added_note_T'], result_table['added_note_P_corr'], rownames=['Target Added Note'], colnames=['Predicted Added Note'], 
-#                                normalize='all').round(4)*100
-    
-# create_save_matrix(confusion_matrix_root,  '_roots_crossmatrix.png', model_name)
-# create_save_matrix(confusion_matrix_triad,  '_triad_crossmatrix.png', model_name)
-# create_save_matrix(confusion_matrix_added_note,  '_addednote_crossmatrix.png', model_name)
 #%% Make plots
 # x and y given as array_like objects
 
+
+
+# F_score_c = F_score_chords.loc[F_score_chords['Sample_Size_Train']>400]
+
+# fig2 = px.scatter(result_table, x="Song_Length", y='Song_Accuracy')
+# fig3 = px.scatter(Acc_chord_idx, x="Chord_idx", y='Chord_Accuracy', size = 'Sample_Size')
+
+# fig5 = px.scatter(F_score, x = 'Sample_Size_Train', y = 'f_score')
+# fig6 = px.scatter(target_seq_accuracy, x = 'Target_Seq', y = 'Seq_Accuracy', size = 'Seq_Sample_Size')   
+# fig7 = px.scatter(target_seq_accuracy, x = 'Seq_Sample_Size', y = 'Seq_Accuracy')   
+
+def scatter(df, x_var, y_var, title, xlabel, ylabel, size= None, color = None, color_name= None):
+    if color == None and size!=None:
+        fig = px.scatter(df, x= x_var, y= y_var, size = size, hover_name= size,
+                 labels={
+                     x_var: xlabel,
+                     y_var: ylabel},
+                 title = title)
+    if (color == None and  size == None):
+        fig = px.scatter(df, x= x_var, y= y_var,
+                 labels={
+                     x_var: xlabel,
+                     y_var: ylabel},
+                 title = title)
+    if (color != None and size != None):
+        fig = px.scatter(df, x= x_var, y= y_var, color = color, size = size ,
+                         hover_name= size, size_max=60,
+                 labels={
+                     x_var: xlabel,
+                     y_var: ylabel,
+                     color : color_name},
+                 title = title)
+    if  (color != None and size == None):
+        fig = px.scatter(df, x= x_var, y= y_var, color = color, 
+                 labels={
+                     x_var: xlabel,
+                     y_var: ylabel,
+                     color : color_name},
+                 title = title)
+    return fig 
+
+
+#%%
+
 pio.renderers.default='browser'
 
-'''
-fig2 = px.scatter(result_table, x="Song_Length", y='Song_Accuracy')
-fig3 = px.scatter(Acc_chord_idx, x="Chord_idx", y='Chord_Accuracy', size = 'Sample_Size')
-fig4 = px.scatter(F_score, x = 'Target_Chords', y = 'f_score', size="Sample_Size_x", hover_name="Target_Chords", size_max=60)
-fig5 = px.scatter(F_score, x = 'Sample_Size_Train', y = 'f_score')
-fig6 = px.scatter(target_seq_accuracy, x = 'Target_Seq', y = 'Seq_Accuracy', size = 'Seq_Sample_Size')   
-fig7 = px.scatter(target_seq_accuracy, x = 'Seq_Sample_Size', y = 'Seq_Accuracy')   
+
+F_score_mel = F_score_mel.loc[F_score_mel['Sample_Size_x']>10]
+
+plot_f_score = scatter(F_score_mel.sort_values(by = 'Target_Chords'),
+                       'Target_Chords', 'f_score', "Chord F-score in the melody model weigthed by training chord appearance",
+                       'Target Chords', 'F-score (%)', size = "Sample_Size_Train" )    
+
+acc_chord_idx = scatter(Acc_chord_idx, 'Chord_idx', 'Chord_Accuracy', 
+                        "Chord accuracy vs chord index in the song sequence",
+                       'Chords Index', 'Chord Accuracy (%)', size = "Sample_Size" )    
+
+acc_chord_idx.show()
+
+             
+
+# fig2.show()
+# fig3.show()
+plot_f_score.show()
+# fig5.show()
+# fig6.show()
+# fig7.show()
 
 
-fig2.show()
-fig3.show()
-fig4.show()
-fig5.show()
-fig6.show()
-fig7.show()
-'''
+
