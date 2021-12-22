@@ -83,7 +83,7 @@ def compare_dominent_with_minor(targets, preds, preds_mel):
                 counter_total_chords += 1
     acc_dominent_d1 = correct_dominent_d1 / total_dominent
     acc_dominent_d4 = correct_dominent_d4 / total_dominent
-    print("Total chords: ", counter_total_chords)
+    print("\nTotal chords: ", counter_total_chords)
     print("Accuracy dominent d1: ", acc_dominent_d1)
     print("Accuracy dominent d4: ", acc_dominent_d4)
     print("Number of wrongly predictated minor instead of dominent d1: ", pred_dominent_d1)
