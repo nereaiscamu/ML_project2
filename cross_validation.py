@@ -5,94 +5,16 @@ import torch.optim as optim
 import torch
 import torch.nn.functional as F
 import numpy as np
-import collections
 import matplotlib.pyplot as plt
 import sys
 sys.path.append('./Data/')
-from multi_hot_encoding import get_dataset_multi_hot_without_split
+from multi_hot_encoding import get_dataset_multi_hot
 from models.lstm_melody_models import LSTM_Multihot
 from argparse import ArgumentParser
 from sklearn.model_selection import KFold
+from helpers import *
 import pickle
-import pdb
 
-# Andrew's
-def get_loss_vl(outputs, targets):
-  # Transpose because torch expects dim 1 to contain the classes
-  # Add ignore_index
-  return F.cross_entropy(outputs.transpose(1, 2), targets, ignore_index=-1)
-
-# Andrew's
-def get_accuracy_vl(outputs, targets):
-  flat_outputs = outputs.argmax(dim=2).flatten()
-  flat_targets = targets.flatten()
-
-  # Mask the outputs and targets
-  mask = flat_targets != -1
-
-  return 100 * (flat_outputs[mask] == flat_targets[mask]).sum() / sum(mask)
-
-def get_val_loss(model, val_loader, device):
-    model.eval()
-
-    for _, batch in enumerate(val_loader):
-        inputs = batch["input"].float().to(device)
-        lengths = batch["length"]
-        targets = batch["target"][:, :max(lengths)].to(device)
-
-        outputs = model(inputs, lengths)
-        loss = get_loss_vl(outputs, targets)
-    
-    return loss.item()
-
-
-# DM
-def evaluate_model(model, device, loader=None, dataset=None):
-    model.eval()
-    if dataset != None:
-        loader = DataLoader(dataset, batch_size=len(dataset), shuffle=False) 
-
-    assert loader != None
-
-    correct = 0
-    total = 0
-    for _, batch in enumerate(loader):
-        inputs = batch["input"].float().to(device)
-        lengths = batch["length"]
-        targets = batch["target"][:, :max(lengths)].to(device)
-
-        preds = model(inputs, lengths)
-        preds = preds.argmax(dim=2).flatten()
-        targets = targets.flatten()
-
-        # Mask the outputs and targets
-        mask = targets != -1
-        
-        correct += (preds[mask] == targets[mask]).sum()
-        total += sum(mask)
-    
-    total = total.cpu().numpy()
-    acc = 100 * correct.item()/total    
-    return acc
-
-
-def split_dataset(dataset):
-    """
-    Splits the dataset in 80% train, 10% validation, 10% test
-    """
-    # Split Train/Val/Test
-    len_dataset = len(dataset)
-
-    len_tr = int(0.8*len_dataset)
-    len_rem = len_dataset - len_tr
-    train_set, rem_set = torch.utils.data.random_split(dataset, [len_tr, len_rem])
-
-    len_rem_set = len(rem_set)
-    len_val = int(0.5*len_rem_set)
-    len_test = len_rem_set - len_val
-    val_set, test_set = torch.utils.data.random_split(rem_set, [len_val, len_test])
-
-    return train_set, val_set, test_set
 
 def train(args):
     # Get dataset
@@ -107,11 +29,11 @@ def train(args):
     device = torch.device("cuda" if cuda else "cpu")
 
     if args.use_saved_dataset:
-        with open('data/datasets/dataset' + str(args.dataset) + '.pickle', 'rb') as f:
+        with open('data/datasets/dataset_wo_split' + str(args.dataset) + '.pickle', 'rb') as f:
             dataset, input_size, target_size = pickle.load(f)
-        print('*** Dataset ' + str(args.dataset) + ' loaded from file ***')
+        print('*** Dataset without split ' + str(args.dataset) + ' loaded from file ***')
     else:
-        dataset, input_size, target_size = get_dataset_multi_hot_without_split(choice=args.dataset)
+        dataset, input_size, target_size = get_dataset_multi_hot(choice=args.dataset, kfold=True)
     
     train_set, val_set, test_set = split_dataset(dataset)
 
@@ -145,10 +67,6 @@ def train(args):
         train_accuracies_fold = []
         val_accuracies_fold = []
         best_cost = 1000
-
-        # Sample elements randomly from a given list of ids, no replacement.
-        #train_subsampler = torch.utils.data.SubsetRandomSampler(train_ids)
-        #val_subsampler = torch.utils.data.SubsetRandomSampler(val_ids)
 
         train_loader = DataLoader(cross_set, batch_size=batch_size, sampler=train_ids) 
         val_loader = DataLoader(cross_set, batch_size=batch_size, sampler=val_ids)
@@ -190,7 +108,7 @@ def train(args):
 
             model.eval()
             train_losses_fold.append(epoch_loss)
-            val_losses_fold.append(get_val_loss(model, val_loader, device))
+            val_losses_fold.append(get_val_loss(model, device, val_loader=val_loader))
             train_accuracies_fold.append(evaluate_model(model, device, loader=train_loader))
             val_accuracies_fold.append(evaluate_model(model, device, loader=val_loader))
             print("EPOCH %.2d\tTrain/val loss: \t%.4f\t%.4f\t\tTrain/val accuracy: \t%.2f\t%.2f" % (epoch, epoch_loss, val_losses_fold[-1], train_accuracies_fold[-1], val_accuracies_fold[-1]))

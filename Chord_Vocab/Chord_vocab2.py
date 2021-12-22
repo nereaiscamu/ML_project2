@@ -11,9 +11,7 @@ import pandas as pd
 import numpy as np
 import pathlib 
 
-
-project_path = "C:/Users/nerea/OneDrive/Documentos/GitHub/ML_project2"
-path = "C:/Users/nerea/OneDrive/Documentos/GitHub/ML_project2/data/wjazzd.db" # REPLACE THIS WITH PATH TO FILE
+path = "./data/wjazzd.db"
 engine = create_engine(f"sqlite:///{path}")
 beats = pd.read_sql("beats", engine)
 
@@ -31,19 +29,6 @@ chords_count = l.value_counts()
 chords_count_keep = chords_count[(chords_count >=10)]
 chords_count_discard = chords_count[(chords_count<10)]
 """
-
-# # Define new index with the key (melid, bar, beat)
-# new_index = ['melid', 'bar', 'beat']
-# df_chords_new = df_chords.set_index(new_index, drop=True)
-# df_melody_new = df_melody.set_index(new_index, drop=True)
-
-# # Concatenate the dataframes using the new index and then reset the index again
-# #df_beats_mel = pd.concat([df_melody_new, df_chords_new.reindex(df_melody_new.index)], axis=1)
-# df_beats_mel = df_chords_new.merge(df_melody_new, left_on=new_index, right_on=new_index, how='outer')
-# df_beats_mel = df_beats_mel.reset_index(drop=False)
-
-
-
 
 #%%  Dataset 1: Basic dataset with only root pitches. Vocab size = 13. One-hot
 
@@ -117,19 +102,15 @@ table['chord'] = table['chord'].drop_duplicates()
 ''' Remove or change useless information'''
 
 beats['chord_map'] = beats['chord_info']
-beats['chord_map'] = beats['chord_map'].str.replace('\/(.*)','')
-beats['chord_map'] = beats['chord_map'].str.replace('m','-')
+beats['chord_map'] = beats['chord_map'].str.replace('\/(.*)','', regex=True)
+beats['chord_map'] = beats['chord_map'].str.replace('m','-', regex=True)
 chord_info_importance = beats['chord_map'].value_counts()
 
 
 # ''' Create 2 options depending if we keep the #/b 
 # from the added notes higher than 7 '''
 
-
-# beats['chord_map2'] = beats['chord_map']
 old_added_notes = ['9#','9b', '9', '11b', '11#', '11', '13b', '13#', '13']
-# note_choices = ['7#', '7b', '7', '7b', '7#', '7', '7b', '7#', '7']
-
 
 for i in old_added_notes:
     beats.loc[beats['chord_map'].str.contains('6', regex = False) == True, 
@@ -139,27 +120,12 @@ for i in old_added_notes:
     beats['chord_map'] = beats['chord_map'].str.replace('77','7') #to avoid repeated 7
 
 
-# for i, j in zip(old_added_notes, note_choices):
-#     beats['chord_map2'] = beats['chord_map2'].str.replace(i,j) #map to 7 but keep the flat/sharp info
-#     beats['chord_map2'] = beats['chord_map2'].str.replace('77','7')
-
-
-# #Remove repetitions
-# beats['chord_map2'] = beats['chord_map2'].str.replace('7b7b','7b')
-# beats['chord_map2'] = beats['chord_map2'].str.replace('7b7','7b')
-# beats['chord_map2'] = beats['chord_map2'].str.replace('7#7#','7#')
-# beats['chord_map2'] = beats['chord_map2'].str.replace('7#7','7#')
-
-   #create unique vectors for each mapping
+#create unique vectors for each mapping
 mapping1 = pd.unique(beats['chord_map']) 
-#mapping2 = pd.unique(beats['chord_map2'])
-
 
 beats['mapped_chord'] = beats['Root_pitch'].str.cat(beats['chord_map'])
-#beats['mapped_chord2'] = beats['Root_pitch'].str.cat(beats['chord_map2'])
 
 num_chords_mapping1 = pd.unique(beats['mapped_chord'])
-#num_chords_mapping2 = pd.unique(beats['mapped_chord2'])
 
 # Create chord dictionary only using C root pitch
 beats['C'] = 'C'
@@ -174,8 +140,7 @@ chord_dict = chord_dict.drop_duplicates(subset=None,
 chord_dict = chord_dict.sort_values(by = ['C_chord_map'])
 
 # save the chord dictionary
-chord_dict.to_csv(pathlib.os.path.join(project_path,'Chord_Dictionary.csv'), 
-                  sep=';', header=True, index=False)
+chord_dict.to_csv('./Chord_Vocab/Chord_Dictionary.csv', sep=';', header=True, index=False)
 
 #%%  Dataset 3: 3 VECTORS, ONE FOR THE ROOT PITCH, A SECOND FOR THE TRIAD FORM AND A THIRD FOR ADDED NOTES
 
@@ -204,10 +169,10 @@ beats['added_note'] = beats['chord_map']
 # (7alt --> mapped to 7)
 remove_note_info = ['-', '+', 'sus',  'b5', 'alt'] 
 for i in remove_note_info:
-    beats['added_note'] = beats['added_note'].str.replace(i,'')
+    beats['added_note'] = beats['added_note'].str.replace(i,'', regex=True)
 
 # 'C' from  No Chord is removed
-beats['added_note'] = beats['added_note'].str.replace('C','')
+beats['added_note'] = beats['added_note'].str.replace('C','', regex=True)
 
 
 # in the added note, diminished is only kept when it affects the 7th note
@@ -231,16 +196,11 @@ mapping3 = mapping3.drop_duplicates(subset=None,
 
 mapping3 = mapping3.astype({"chord_info":'category', "triad":'category', 
                             'added_note':'category'})
-mapping3.to_csv(pathlib.os.path.join(project_path,'3hot.csv'), 
-                  sep=';', header=True,  
-                  index=False)
-
-
+mapping3.to_csv('./Chord_Vocab/3hot.csv', sep=';', header=True, index=False)
 
 #%% SAVE MODIFIED BEATS TABLE WITH INFORMATION FOR ALL DATASETS
 
 beats = beats[['beatid', 'melid', 'chord', 'Root_pitch', 'chord_info', 
                'chord_map', 'triad', 'added_note']]
 
-beats.to_csv(pathlib.os.path.join(project_path,'Beats_Modified.csv'), 
-                  sep=';', header=True, index=False)
+beats.to_csv('./Chord_Vocab/Beats_Modified.csv', sep=';', header=True, index=False)
