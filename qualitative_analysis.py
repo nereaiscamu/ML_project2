@@ -16,14 +16,14 @@ import seaborn as sn
 from multi_hot_encoding import get_dataset_multi_hot
 import pathlib 
 
-# Select model. !! Use according datset, hidden_dim, layers and seed !!
+# Select model. !! Use according dataset, hidden_dim, layers and seed !!
 
 model_path = 'models/trained_models/1_Baseline.pth'
-model_name = 'result_analysis/3hot_chords_only'
+model_name = 'result_analysis/1_Baseline'
 dataset = 1
 
 model_path_mel = 'models/trained_models/2_Melody.pth'
-model_name_mel = 'result_analysis/chords_mel_data4'
+model_name_mel = 'result_analysis/2_melody'
 dataset_mel = 2
 
 project_path = os.getcwd()

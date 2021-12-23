@@ -9,23 +9,13 @@ Group Members:
 
 ## Project Structure
 
-    .
-    ├── Chord_Vocab                         # 
-    │   ├── 3hot_mod.csv                    # 
-    │   ├── 3hot.csv                        # 
-    │   ├── 3hot.txt                        # 
-    │   ├── Beats_Modifier                  # 
-    │   ├── Chord_Dicitonary.csv            # Map of our chord dictionary as .csv file
-    |   ├── chord_map.pkl                   # Map of the chord vocabulary
-    |   ├── Chord_vocab.py                  # 
 
     ├── data                                # Contains the file to preprocess the data
-    │   ├── Chord_vocab.py                  # Creates .csv files that represent the chord vocabulary
     │   ├── combine_melody_beats.py         # Combines melody with beats table
     │   ├── dataset.py                      # Defines the torch Datasets
     │   ├── multi_hot_encoding.py           # Creates the different Datasets
-    │   ├── one_hot_encoding.py             # 
-    │   ├── wjazzd.db                       # Our final submission
+    │   ├── wjazzd.db                       # Original Weimar Jazz Database
+    │   ├── datasets						# Folder to save the datasets when training/loading the models    
 
     ├── models                              # 
     │   ├── trained_models                  # 
@@ -47,8 +37,18 @@ Group Members:
     └── hp_search.py                        # Uses random or grid search to find best hyperparameters
     └── load_model.py                       # Loads a selected model
     └── qualitative_analysis.py             # Analysis between Baseline and Melody
-    └── Tune Accuracy comparison.csv        # Accuracy comparison of the Baseline and Melody
+    └── Tune Accuracy comparison.csv        # Accuracy comparison of the Baseline and Melody for each test sample (song)
     └── train.py                            # Trains a given model
+	
+## Loading models
 
-## Running
+To check the different models' accuracy, load the models and generate the datasets by running load_model.py.
 
+## Training models
+
+To train one of the models, from the command line type "train.py --dataset=dataset_id", where dataset_id is the index preceding the different models listed in trained models. Also, if the dataset has been previously generated, add as an argument "--use-saved-dataset= True".
+
+
+## Qualitative analysis
+
+To generate the plots and tables used in the qualitative analysis, run qualitative_analysis.py. The default models to compare are 1_Baseline and 2_Melody. 
