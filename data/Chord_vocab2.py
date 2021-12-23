@@ -139,17 +139,6 @@ for i in old_added_notes:
     beats['chord_map'] = beats['chord_map'].str.replace('77','7') #to avoid repeated 7
 
 
-# for i, j in zip(old_added_notes, note_choices):
-#     beats['chord_map2'] = beats['chord_map2'].str.replace(i,j) #map to 7 but keep the flat/sharp info
-#     beats['chord_map2'] = beats['chord_map2'].str.replace('77','7')
-
-
-# #Remove repetitions
-# beats['chord_map2'] = beats['chord_map2'].str.replace('7b7b','7b')
-# beats['chord_map2'] = beats['chord_map2'].str.replace('7b7','7b')
-# beats['chord_map2'] = beats['chord_map2'].str.replace('7#7#','7#')
-# beats['chord_map2'] = beats['chord_map2'].str.replace('7#7','7#')
-
    #create unique vectors for each mapping
 mapping1 = pd.unique(beats['chord_map']) 
 #mapping2 = pd.unique(beats['chord_map2'])

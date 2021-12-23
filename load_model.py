@@ -114,7 +114,7 @@ def load_model(load_path, dataset, hidden_dim, layers, seed=42, song_input=True)
 
 
 def load_training_data(dataset, seed=42):
-    train_dataset, val_dataset, test_dataset, input_size, target_size = get_dataset_multi_hot(choice=dataset, seed=seed)
+    train_dataset, val_dataset, test_dataset, input_size, target_size, song_ids= get_dataset_multi_hot(choice=dataset, seed=seed, get_song_ids=True)
     
     # Load chord map -- from one-hot to chord name
     with open('models/new_chord_map.pkl', 'rb') as f:
