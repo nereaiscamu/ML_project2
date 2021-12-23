@@ -4,11 +4,8 @@ import torch.optim as optim
 import torch
 import torch.nn.functional as F
 import numpy as np
-import collections
-import matplotlib.pyplot as plt
 import sys
 sys.path.append('./data/')
-from one_hot_encoding import get_dataset_one_hot
 from multi_hot_encoding import get_dataset_multi_hot
 from models.lstm_chord_models import LSTMChord, LSTMChordEmbedding, LSTMChordEmbedding_Multihot
 from models.lstm_melody_models import LSTM_Multihot, LSTM_Multihot_MLP
@@ -20,7 +17,7 @@ import time
 
 
 def grid_search():
-    dataset = 7
+    dataset = 1
     #embed_sizes = [64, 96, 128, 192]
     #embed_sizes = [128, 192]
     embed_sizes = [192]
@@ -35,7 +32,7 @@ def grid_search():
     best_embed_size = 0
     best_layers = 0
 
-    file_name = "search_results/grid_search_" + str(int(time.time())) + ".txt"
+    file_name = "grid_search_" + str(int(time.time())) + ".txt"
     f = open(file_name, "a")
     f.write('Grid search results:\n')
     f.close()
@@ -63,7 +60,7 @@ def grid_search():
 
 def random_search():
     # choose dataset
-    dataset = 8
+    dataset = 1
 
     # select best grid search values
     embed_size = 192
@@ -87,7 +84,7 @@ def random_search():
     best_acc = 0
     indx_best = 0
 
-    file_name = "search_results/random_search_" + str(int(time.time())) + ".txt"
+    file_name = "random_search_" + str(int(time.time())) + ".txt"
     f = open(file_name, "a")
     f.write('Random search results for\tDataset: %d\tEmbed dim: %d\tLayers: %d\n' % (dataset, embed_size, layers))
     f.close()
@@ -111,7 +108,7 @@ def random_search():
     print('\nBest Validation accuracy: %.2f\tLearning rate: %.5f\tWeight decay: %.8f\tDropout: %.2f' %(best_acc, lr[indx_best], wd[indx_best], dropout[indx_best]))
 
 
-def train(dataset=8, hidden_dim=64, layers=2, max_epochs=200, lr=0.01, wd=1e-5, dropout=0.2, early_stopping=15, seed=42):
+def train(dataset=1, hidden_dim=64, layers=2, max_epochs=200, lr=0.01, wd=1e-5, dropout=0.2, early_stopping=15, seed=42):
     np.random.seed(42)
     sys.argv = [sys.argv[0]]
 

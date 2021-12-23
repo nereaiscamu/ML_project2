@@ -1,9 +1,5 @@
-from torch.utils.data import Dataset, DataLoader
 import torch.nn as nn
-import torch.optim as optim
 import torch.nn.functional as F
-import torch
-import numpy as np
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 
 
@@ -82,4 +78,4 @@ class LSTM_Multihot_MLP(nn.Module):
         out = self.dropout_linear(out)
         out = self.output(out)
 
-        return out 
+        return out

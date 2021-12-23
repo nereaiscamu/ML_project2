@@ -1,89 +1,19 @@
 from torch.utils.data import DataLoader
-import torch.nn as nn
 import torch.optim as optim
 import torch
-import torch.nn.functional as F
 import numpy as np
 import matplotlib.pyplot as plt
 import sys
 sys.path.append('./data/')
-from one_hot_encoding import get_dataset_one_hot
 from multi_hot_encoding import get_dataset_multi_hot
-from models.lstm_chord_models import LSTMChord, LSTMChordEmbedding, LSTMChordEmbedding_Multihot
-from models.lstm_melody_models import LSTM_Multihot, LSTM_Multihot_MLP
+from models.lstm_melody_models import LSTM_Multihot
 from argparse import ArgumentParser
+from helpers import *
 import pickle
-import pdb
 import pandas as pd
 # Suppress warning "A value is trying to be set on a copy of a slice from a DataFrame"
 pd.options.mode.chained_assignment = None  # default='warn'
 
-# Andrew's
-def get_loss_vl(outputs, targets):
-  # Transpose because torch expects dim 1 to contain the classes
-  # Add ignore_index
-  return F.cross_entropy(outputs.transpose(1, 2), targets, ignore_index=-1)
-
-# Andrew's
-def get_accuracy_vl(outputs, targets):
-    """
-    
-    """
-    flat_outputs = outputs.argmax(dim=2).flatten()
-    flat_targets = targets.flatten()
-
-    # Mask the outputs and targets
-    mask = flat_targets != -1
-
-    return 100 * (flat_outputs[mask] == flat_targets[mask]).sum() / sum(mask)
-
-def get_val_loss(model, val_dataset, device):
-    """
-    
-    """
-    model.eval()
-    val_loader = DataLoader(val_dataset, batch_size=len(val_dataset), shuffle=False) 
-
-    for _, batch in enumerate(val_loader):
-        inputs = batch["input"].float().to(device)
-        targets = batch["target"].to(device)
-        lengths = batch["length"]
-
-        outputs = model(inputs, lengths)
-        loss = get_loss_vl(outputs, targets)
-    
-    return loss.item()
-
-
-# DM
-def evaluate_model(model, dataset, device):
-    """
-    
-    """
-    model.eval()
-    loader = DataLoader(dataset, batch_size=len(dataset), shuffle=False) 
-
-    correct = 0
-    total = 0
-    for _, batch in enumerate(loader):
-        inputs = batch["input"].float().to(device)
-        targets = batch["target"].to(device)
-        lengths = batch["length"]
-
-        preds = model(inputs, lengths)
-        preds = preds.argmax(dim=2).flatten()
-        targets = targets.flatten()
-
-        # Mask the outputs and targets
-        mask = targets != -1
-        
-        correct += (preds[mask] == targets[mask]).sum()
-        total += sum(mask)
-    
-    total = total.cpu().numpy()
-    acc = 100 * correct.item()/total    
-    return acc
-         
 
 def train(args):
     # Get dataset
@@ -148,9 +78,9 @@ def train(args):
         model.eval()
         train_losses.append(epoch_loss)
         
-        val_losses.append(get_val_loss(model, val_dataset, device))
-        train_accuracies.append(evaluate_model(model, train_dataset, device))
-        val_accuracies.append(evaluate_model(model, val_dataset, device))
+        val_losses.append(get_val_loss(model, device, val_set=val_dataset))
+        train_accuracies.append(evaluate_model(model, device, dataset=train_dataset))
+        val_accuracies.append(evaluate_model(model, device, dataset=val_dataset))
 
         # Early stopping based on the validation set:
         # Check that improvement has been made in the last X epochs
@@ -178,11 +108,11 @@ def train(args):
     print('*** Training done! ***')
 
     # EVALUATE
-    tr_acc = evaluate_model(model, train_dataset, device)
+    tr_acc = evaluate_model(model, device, dataset=train_dataset)
     print('Train accuracy:\t%.2f' % tr_acc)
-    val_acc = evaluate_model(model, val_dataset, device)
+    val_acc = evaluate_model(model, device, dataset=val_dataset)
     print('Val accuracy:\t%.2f' % val_acc)
-    te_acc = evaluate_model(model, test_dataset, device)
+    te_acc = evaluate_model(model, device, dataset=test_dataset)
     print('Test accuracy:\t%.2f' % te_acc)
 
     plt.plot(train_losses, label='Train')
@@ -190,7 +120,6 @@ def train(args):
     plt.legend()
     plt.ylabel('Loss')
     plt.xlabel('Epoch')
-    plt.savefig('figs_results/loss.png')
     plt.show()
 
     plt.plot(train_accuracies, label='Train')
@@ -198,7 +127,6 @@ def train(args):
     plt.ylabel('Accuracy (%)')
     plt.xlabel('Epoch')
     plt.legend()
-    plt.savefig('figs_results/acc.png')
     plt.show()
 
     if args.save_path is not None:

@@ -1,8 +1,6 @@
 import numpy as np
-import pandas as pd
-import pdb
 
-def concat_melody_beats(df_melody, df_beats):
+def merge_melody_beats(df_melody, df_beats):
     """
     Uses the output of the preprocess_chords for mel_included = True
 
@@ -27,7 +25,7 @@ def concat_melody_beats(df_melody, df_beats):
 
     return df_beats_mel
 
-def encode_pitch(df_melody, df_beats, pitch_sequence=False):
+def encode_melody(df_melody, df_beats, pitch_sequence=False):
     """
     Encodes the pitches of the melody in combination with the beats.
 
@@ -40,7 +38,7 @@ def encode_pitch(df_melody, df_beats, pitch_sequence=False):
         Dataframe containing the encoded pitches
     """
 
-    df_beats_mel = concat_melody_beats(df_melody, df_beats)
+    df_beats_mel = merge_melody_beats(df_melody, df_beats)
     
     # Encode pitch
     df_beats_mel['pitch_encoded'] = np.mod(df_beats_mel['pitch'], 12)

@@ -1,15 +1,9 @@
-from torch.utils.data import DataLoader
-import torch.nn as nn
-import torch.optim as optim
 import torch
 import numpy as np
-import matplotlib.pyplot as plt
 import sys
 sys.path.append('./data/')
-from one_hot_encoding import get_dataset_one_hot
 from multi_hot_encoding import get_dataset_multi_hot
-from models.lstm_chord_models import LSTMChord, LSTMChordEmbedding, LSTMChordEmbedding_Multihot
-from models.lstm_melody_models import LSTM_Multihot, LSTM_Multihot_MLP
+from models.lstm_melody_models import LSTM_Multihot
 from train import evaluate_model
 import pickle
 import pandas as pd
@@ -23,7 +17,7 @@ def load_model(load_path, dataset, hidden_dim, layers, seed=42, song_input=True)
     device = torch.device("cuda" if cuda else "cpu")
     device = torch.device("cpu")
     
-    train_dataset, val_dataset, test_dataset, input_size, target_size, song_ids = get_dataset_multi_hot(choice=dataset, seed=seed, get_song_ids=True)
+    train_dataset, val_dataset, test_dataset, input_size, target_size, tune_ids = get_dataset_multi_hot(choice=dataset, seed=seed, get_tune_ids=True)
     
     len_sequences = len(train_dataset) + len(val_dataset) + len(test_dataset)
     random_idxs = np.random.RandomState(seed=seed).permutation(len_sequences)
@@ -34,17 +28,17 @@ def load_model(load_path, dataset, hidden_dim, layers, seed=42, song_input=True)
     model.load_state_dict(torch.load(load_path))
 
     # evaluate
-    tr_acc = evaluate_model(model, train_dataset, device)
+    tr_acc = evaluate_model(model, device, dataset=train_dataset)
     print('Train accuracy:\t%.2f' % tr_acc)
-    val_acc = evaluate_model(model, val_dataset, device)
+    val_acc = evaluate_model(model, device, dataset=val_dataset)
     print('Val accuracy:\t%.2f' % val_acc)
-    te_acc = evaluate_model(model, test_dataset, device)
+    te_acc = evaluate_model(model, device, dataset=test_dataset)
     print('Test accuracy:\t%.2f' % te_acc)
 
     # Load chord map -- from one-hot to chord name
-    with open('models/new_chord_map.pkl', 'rb') as f:
-        new_chord_map = pickle.load(f)
-        new_chord_map = dict((v,k) for k,v in new_chord_map.items())
+    with open('Chord_Vocab/chord_map.pkl', 'rb') as f:
+        chord_map = pickle.load(f)
+        chord_map = dict((v,k) for k,v in chord_map.items())
     
     song_list = list()
     song_length = list()
@@ -67,15 +61,15 @@ def load_model(load_path, dataset, hidden_dim, layers, seed=42, song_input=True)
         correct = correct.float()
         acc = correct/sum(mask) * 100
         
-        preds_chord = [new_chord_map[key.item()] for key in preds]
-        targets_chord = [new_chord_map[key.item()] for key in targets[mask]]
+        preds_chord = [chord_map[key.item()] for key in preds]
+        targets_chord = [chord_map[key.item()] for key in targets[mask]]
         
-        song_list.append(song_ids[test_split[i]])
+        song_list.append(tune_ids[test_split[i]])
         song_length.append(int(lengths[0]))
         song_accuracy.append(round(float(acc),2))
         preds_total.append(pd.DataFrame(preds_chord))
         targets_total.append(pd.DataFrame(targets_chord))
-        print('Test song %d\tSong ID: %d\tLength: %d\tAccuracy: %.2f' % (i, song_ids[test_split[i]], lengths[0], acc))
+        print('Test song %d\tSong ID: %d\tLength: %d\tAccuracy: %.2f' % (i, tune_ids[test_split[i]], lengths[0], acc))
     
 
     # Qualitative study of ONE SONG
@@ -94,10 +88,10 @@ def load_model(load_path, dataset, hidden_dim, layers, seed=42, song_input=True)
         lengths = [sample["length"]]
         preds = model(inputs, lengths)
         preds = preds.argmax(dim=2).flatten()
-        preds_chord = [new_chord_map[key.item()] for key in preds]
+        preds_chord = [chord_map[key.item()] for key in preds]
         targets = targets.flatten()
         mask = targets != -1                            # Mask the outputs and targets
-        targets_chord = [new_chord_map[key.item()] for key in targets[mask]]
+        targets_chord = [chord_map[key.item()] for key in targets[mask]]
 
         correct = (preds == targets[mask]).sum()
         correct = correct.float()
@@ -114,12 +108,12 @@ def load_model(load_path, dataset, hidden_dim, layers, seed=42, song_input=True)
 
 
 def load_training_data(dataset, seed=42):
-    train_dataset, val_dataset, test_dataset, input_size, target_size, song_ids= get_dataset_multi_hot(choice=dataset, seed=seed, get_song_ids=True)
+    train_dataset, _, _, _, _, _= get_dataset_multi_hot(choice=dataset, seed=seed, get_tune_ids=True)
     
     # Load chord map -- from one-hot to chord name
-    with open('models/new_chord_map.pkl', 'rb') as f:
-        new_chord_map = pickle.load(f)
-        new_chord_map = dict((v,k) for k,v in new_chord_map.items())
+    with open('Chord_Vocab/chord_map.pkl', 'rb') as f:
+        chord_map = pickle.load(f)
+        chord_map = dict((v,k) for k,v in chord_map.items())
     
     song_length = list()
     targets_total = [[]]
@@ -132,7 +126,7 @@ def load_training_data(dataset, seed=42):
         targets = targets.flatten()
         mask = targets != -1
                 
-        targets_chord = [new_chord_map[key.item()] for key in targets[mask]]
+        targets_chord = [chord_map[key.item()] for key in targets[mask]]
         
         song_length.append(int(lengths[0]))
         targets_total.append(pd.DataFrame(targets_chord))

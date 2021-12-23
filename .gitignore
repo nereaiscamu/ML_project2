@@ -6,7 +6,7 @@ __pycache__/
 acc.png
 loss.png
 data/datasets
-models/new_chord_map.pkl
+models/chord_map.pkl
 
 # C extensions
 *.so

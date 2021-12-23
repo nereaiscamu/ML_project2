@@ -18,28 +18,14 @@ import pathlib
 
 # Select model. !! Use according datset, hidden_dim, layers and seed !!
 
-
-model_path = 'models/trained_models/optimized_192_2_dataset_1.pth'
+model_path = 'models/trained_models/1_Baseline.pth'
 model_name = 'result_analysis/3hot_chords_only'
 dataset = 1
 
-model_path_mel = 'models/trained_models/optimized_192_2_dataset_4.pth'
+model_path_mel = 'models/trained_models/2_Melody.pth'
 model_name_mel = 'result_analysis/chords_mel_data4'
-dataset_mel = 4
+dataset_mel = 2
 
-model_path_5 = 'models/trained_models/optimized_192_2_dataset_5.pth'
-model_name_5 = 'result_analysis/chords_bass_data5'
-
-
-model_path_6 = 'models/trained_models/optimized_192_2_dataset_6.pth'
-model_name_6 = 'result_analysis/chords_mel_bass_data6'
-
-
-model_path_8 = 'models/trained_models/optimized_192_2_dataset_8.pth'
-model_name_8 = 'result_analysis/chords_melweighted_data8'
-
-
-project_path = "C:/Users/nerea/OneDrive/Documentos/GitHub/ML_project2" #to change
 project_path = os.getcwd()
 result_analysis_path = pathlib.os.path.join(project_path,'result_analysis/Report')
 
@@ -61,28 +47,8 @@ num_chords = lambda x: len(x)
 
 # Load models
 song_list, song_length, song_accuracy, preds, targets = load_model(model_path, dataset, hidden_dim, layers, seed, song_input=False)
-# Train accuracy:	90.78
-# Val accuracy:	62.12
-# Test accuracy:	50.89
 song_list_mel, song_length_mel, song_accuracy_mel, preds_mel, targets_mel = load_model(model_path_mel, dataset_mel, hidden_dim, layers, seed, song_input=False)
-# Train accuracy:	88.92
-# Val accuracy:	60.61
-# Test accuracy:	53.93
-     
-#%%   
-song_list5, song_length5, song_accuracy5, preds5, targets5 = load_model(model_path_5, 5, hidden_dim, layers, seed, song_input=False)
-
-#%%
-song_list6, song_length6, song_accuracy6, preds6, targets6 = load_model(model_path_6, 6, hidden_dim, layers, seed, song_input=False)
-# Train accuracy:	82.49
-# Val accuracy:	58.68
-# Test accuracy:	53.47
-
-#%%
-song_list8, song_length8, song_accuracy8, preds8, targets8 = load_model(model_path_8, 8, hidden_dim, layers, seed, song_input=False)
-# Train accuracy:	82.49
-# Val accuracy:	58.68
-# Test accuracy:	53.47
+        
 
 #%%
 
@@ -337,9 +303,9 @@ def create_save_matrix(df, var1, var2, plot_name, model_name, title=None, show=T
         plt.show(block=False)
         plt.close('all')
     
-    savepath = str(model_name) + str(plot_name)
-    figure = matrix_fig.get_figure()    
-    figure.savefig(savepath, dpi=400)
+    # savepath = str(model_name) + str(plot_name)
+    # figure = matrix_fig.get_figure()   
+    # figure.savefig(savepath, dpi=400)
 
 
 def get_decoded_melody(melid):
@@ -357,7 +323,7 @@ def get_decoded_melody(melid):
         10 : 'A#',
         11 : 'B'
     }
-    seq_melody = get_dataset_multi_hot(choice=4, return_mel_id=melid)
+    seq_melody = get_dataset_multi_hot(choice=4, return_seq_melid=melid)
     # Remove -1s from sequences
     seq_melody = [[elem for elem in seq if elem != -1] for seq in seq_melody]
     decoded_mel = [list(pd.Series(seq, dtype='object').map(dict)) for seq in seq_melody]
@@ -387,7 +353,6 @@ def song_analysis(df, song_id, model_name, model_name_mel):
     if not os.path.exists(path):
         # Create a new directory because it does not exist 
         os.makedirs(path)
-        print("The new directory is created!")
     result_song_simple.to_csv(pathlib.os.path.join(path, 'Model Predictions Compared.csv'), 
                       sep=';', header=True, index=False)
     return result_song
@@ -436,8 +401,7 @@ train_chord_size_seq=train_sample_size_chords(train_table, size_seq = True)
 #%%
 
 song_acc_diff = compare_accuracies_table(song_list, song_length, song_accuracy,song_list_mel, song_length_mel, song_accuracy_mel)
-song_acc_diff.to_csv(pathlib.os.path.join(result_analysis_path,'Song Accuracy comparison.csv'), 
-                  sep=';', header=True, index=False)
+song_acc_diff.to_csv('Tune Accuracy comparison.csv', sep=';', header=True, index=False)
 
 result_table, results_numbers = create_result_table(song_list, song_length, song_accuracy, preds, targets)
 result_table_mel, results_numbers_mel = create_result_table(song_list_mel, song_length_mel, song_accuracy_mel, preds_mel, targets_mel )
@@ -479,7 +443,7 @@ if do_conf_matrix_all_songs:
         song_df = root_pitch(result_table[result_table['Test_sample_ID'] == i])
         confusion_matrix_root = pd.crosstab(song_df['t_root'], song_df['p_root'], rownames=['Target'], colnames=['Predicted'], normalize='all').round(4)*100
         title = 'Song test ID ' + str(i) + '. Length: ' + str(results_numbers.at[i, 'Song_Length']) + ' Acc: ' + str(results_numbers.at[i, 'Song_Accuracy'])
-        create_save_matrix(confusion_matrix_root,  'roots_crossmatrix_song_' + str(i) + '.png', 'result_analysis/all_songs/', title=title, show=False)
+        create_save_matrix(confusion_matrix_root,  'roots_crossmatrix_song_' + str(i) + '.png', 'result_analysis/all_songs/', title=title, show=True)
         
 
         

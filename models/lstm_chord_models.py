@@ -1,9 +1,5 @@
-from torch.utils.data import Dataset, DataLoader
 import torch.nn as nn
-import torch.optim as optim
 import torch.nn.functional as F
-import torch
-import numpy as np
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 
 
@@ -107,6 +103,4 @@ class LSTMChordEmbedding_Multihot(nn.Module):
 
         # Shape = batch, sequence, vocab_size
         return output  # Sometimes you want a softmax here -- look at the loss documentation
-
-
 
