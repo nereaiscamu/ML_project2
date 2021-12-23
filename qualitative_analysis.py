@@ -18,11 +18,6 @@ import pathlib
 
 # Select model. !! Use according datset, hidden_dim, layers and seed !!
 
-'''
-model_path = 'models/trained_models/optimized_192_2_dataset_4.pth'
-model_name = 'result_analysis/chords_mel_data4'
-dataset = 4
-'''
 
 model_path = 'models/trained_models/optimized_192_2_dataset_1.pth'
 model_name = 'result_analysis/3hot_chords_only'
@@ -31,6 +26,17 @@ dataset = 1
 model_path_mel = 'models/trained_models/optimized_192_2_dataset_4.pth'
 model_name_mel = 'result_analysis/chords_mel_data4'
 dataset_mel = 4
+
+model_path_5 = 'models/trained_models/optimized_192_2_dataset_5.pth'
+model_name_5 = 'result_analysis/chords_bass_data5'
+
+
+model_path_6 = 'models/trained_models/optimized_192_2_dataset_6.pth'
+model_name_6 = 'result_analysis/chords_mel_bass_data6'
+
+
+model_path_8 = 'models/trained_models/optimized_192_2_dataset_8.pth'
+model_name_8 = 'result_analysis/chords_melweighted_data8'
 
 
 project_path = "C:/Users/nerea/OneDrive/Documentos/GitHub/ML_project2" #to change
@@ -55,8 +61,28 @@ num_chords = lambda x: len(x)
 
 # Load models
 song_list, song_length, song_accuracy, preds, targets = load_model(model_path, dataset, hidden_dim, layers, seed, song_input=False)
+# Train accuracy:	90.78
+# Val accuracy:	62.12
+# Test accuracy:	50.89
 song_list_mel, song_length_mel, song_accuracy_mel, preds_mel, targets_mel = load_model(model_path_mel, dataset_mel, hidden_dim, layers, seed, song_input=False)
-        
+# Train accuracy:	88.92
+# Val accuracy:	60.61
+# Test accuracy:	53.93
+     
+#%%   
+song_list5, song_length5, song_accuracy5, preds5, targets5 = load_model(model_path_5, 5, hidden_dim, layers, seed, song_input=False)
+
+#%%
+song_list6, song_length6, song_accuracy6, preds6, targets6 = load_model(model_path_6, 6, hidden_dim, layers, seed, song_input=False)
+# Train accuracy:	82.49
+# Val accuracy:	58.68
+# Test accuracy:	53.47
+
+#%%
+song_list8, song_length8, song_accuracy8, preds8, targets8 = load_model(model_path_8, 8, hidden_dim, layers, seed, song_input=False)
+# Train accuracy:	82.49
+# Val accuracy:	58.68
+# Test accuracy:	53.47
 
 #%%
 
