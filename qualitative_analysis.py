@@ -18,11 +18,11 @@ import pathlib
 
 # Select model. !! Use according datset, hidden_dim, layers and seed !!
 
-model_path = 'models/trained_models/optimized_192_2_dataset_1.pth'
+model_path = 'models/trained_models/1_Baseline.pth'
 model_name = 'result_analysis/3hot_chords_only'
 dataset = 1
 
-model_path_mel = 'models/trained_models/optimized_192_2_dataset_4.pth'
+model_path_mel = 'models/trained_models/2_Melody.pth'
 model_name_mel = 'result_analysis/chords_mel_data4'
 dataset_mel = 4
 
@@ -325,7 +325,7 @@ def get_decoded_melody(melid):
         10 : 'A#',
         11 : 'B'
     }
-    seq_melody = get_dataset_multi_hot(choice=4, return_mel_id=melid)
+    seq_melody = get_dataset_multi_hot(choice=4, return_seq_melid=melid)
     # Remove -1s from sequences
     seq_melody = [[elem for elem in seq if elem != -1] for seq in seq_melody]
     decoded_mel = [list(pd.Series(seq, dtype='object').map(dict)) for seq in seq_melody]
