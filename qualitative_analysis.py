@@ -24,7 +24,7 @@ dataset = 1
 
 model_path_mel = 'models/trained_models/2_Melody.pth'
 model_name_mel = 'result_analysis/chords_mel_data4'
-dataset_mel = 4
+dataset_mel = 2
 
 
 project_path = "C:/Users/nerea/OneDrive/Documentos/GitHub/ML_project2" #to change
