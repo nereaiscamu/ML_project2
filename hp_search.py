@@ -108,7 +108,7 @@ def random_search():
     print('\nBest Validation accuracy: %.2f\tLearning rate: %.5f\tWeight decay: %.8f\tDropout: %.2f' %(best_acc, lr[indx_best], wd[indx_best], dropout[indx_best]))
 
 
-def train(dataset=1, hidden_dim=64, layers=2, max_epochs=2, lr=0.01, wd=1e-5, dropout=0.2, early_stopping=15, seed=42):
+def train(dataset=1, hidden_dim=64, layers=2, max_epochs=200, lr=0.01, wd=1e-5, dropout=0.2, early_stopping=15, seed=42):
     np.random.seed(42)
     sys.argv = [sys.argv[0]]
 
