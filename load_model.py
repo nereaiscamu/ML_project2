@@ -36,7 +36,7 @@ def load_model(load_path, dataset, hidden_dim, layers, seed=42, song_input=True)
     print('Test accuracy:\t%.2f' % te_acc)
 
     # Load chord map -- from one-hot to chord name
-    with open('data/chord_map.pkl', 'rb') as f:
+    with open('Chord_Vocab/chord_map.pkl', 'rb') as f:
         chord_map = pickle.load(f)
         chord_map = dict((v,k) for k,v in chord_map.items())
     
@@ -111,7 +111,7 @@ def load_training_data(dataset, seed=42):
     train_dataset, val_dataset, test_dataset, input_size, target_size, song_ids= get_dataset_multi_hot(choice=dataset, seed=seed, get_song_ids=True)
     
     # Load chord map -- from one-hot to chord name
-    with open('data/chord_map.pkl', 'rb') as f:
+    with open('Chord_Vocab/chord_map.pkl', 'rb') as f:
         chord_map = pickle.load(f)
         chord_map = dict((v,k) for k,v in chord_map.items())
     

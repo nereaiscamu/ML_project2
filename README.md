@@ -10,8 +10,17 @@ Group Members:
 ## Project Structure
 
     .
-    ├── data                                # Contains the file to preprocess the data
+    ├── Chord_Vocab                         # 
+    │   ├── 3hot_mod.csv                    # 
+    │   ├── 3hot.csv                        # 
+    │   ├── 3hot.txt                        # 
+    │   ├── Beats_Modifier                  # 
+    │   ├── Chord_Dicitonary.csv            # Map of our chord dictionary as .csv file
     |   ├── chord_map.pkl                   # Map of the chord vocabulary
+    |   ├── Chord_vocab.py                  # 
+
+
+    ├── data                                # Contains the file to preprocess the data
     │   ├── Chord_vocab.py                  # Creates .csv files that represent the chord vocabulary
     │   ├── combine_melody_beats.py         # Combines melody with beats table
     │   ├── dataset.py                      # Defines the torch Datasets

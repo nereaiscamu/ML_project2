@@ -149,13 +149,13 @@ def encode_chords(table):
     table['added_note_num'] = table['added_note'].map(added_note_map)
 
     # Encode new chord
-    new_chord_map = {}
+    chord_map = {}
     for i, c in enumerate(unique_chords):
-        new_chord_map[c] = i
-    table['new_chord_num'] = table['new_chord'].map(new_chord_map)
+        chord_map[c] = i
+    table['new_chord_num'] = table['new_chord'].map(chord_map)
     
-    a_file = open("models/new_chord_map.pkl", "wb")
-    pickle.dump(new_chord_map, a_file)
+    a_file = open("Chord_Vocab/chord_map.pkl", "wb")
+    pickle.dump(chord_map, a_file)
     a_file.close()
 
     return table

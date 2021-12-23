@@ -131,7 +131,6 @@ num_chords_mapping1 = pd.unique(beats['mapped_chord'])
 beats['C'] = 'C'
 beats['C_chords_ref'] = beats['C'].str.cat(beats['chord_info'])
 beats['C_chord_map'] = beats['C'].str.cat(beats['chord_map'])
-#beats['C_chord_map2'] = beats['C'].str.cat(beats['chord_map2'])
 
 chord_dict = beats[['C_chords_ref', 'C_chord_map']]
 chord_dict = chord_dict.drop_duplicates(subset=None, 
