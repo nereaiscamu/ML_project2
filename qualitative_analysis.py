@@ -393,13 +393,8 @@ def compare_dominent_with_minor(targets, preds, preds_mel):
 #%% Creating the main tables
 
 train_table = create_train_table(dataset, seed)
-
-#%%
 train_chord_size = train_sample_size_chords(train_table, size_seq = False)
 train_chord_size_seq=train_sample_size_chords(train_table, size_seq = True)
-
-#%%
-
 song_acc_diff = compare_accuracies_table(song_list, song_length, song_accuracy,song_list_mel, song_length_mel, song_accuracy_mel)
 song_acc_diff.to_csv('Tune Accuracy comparison.csv', sep=';', header=True, index=False)
 
@@ -420,15 +415,9 @@ print('Accuracy | Prev. incorrect: %.2f\n' % (result_table_mel.correct_prev_inc.
 
 resul_table_sep_vec = separating_vectors_acc(result_table)
 resul_table_sep_vec_mel = separating_vectors_acc(result_table_mel)
-
-#%%
-
 result_table_all = resul_table_sep_vec[['Test_sample_ID', 'Chord_idx', 'Song', 'Target_Chords', 'Pred_Chords', 't_root', 'p_root', 'triad_T', 'triad_P_corr', 'added_note_T', 'added_note_P_corr']].merge(
     resul_table_sep_vec_mel[['Test_sample_ID', 'Chord_idx', 'Song', 'Target_Chords', 'Pred_Chords', 't_root', 'p_root', 'triad_T', 'triad_P_corr', 'added_note_T', 'added_note_P_corr']], left_on=['Test_sample_ID', 'Chord_idx', 'Song', 'Target_Chords', 't_root', 'triad_T',  'added_note_T'], 
     right_on = ['Test_sample_ID', 'Chord_idx', 'Song', 'Target_Chords', 't_root', 'triad_T',  'added_note_T'])
-
-#%%
-
 result_table_all = result_table_all.rename(columns = {'Pred_Chords_x' : 'Pred_Chords', 
                                                       'Pred_Chords_y' : 'Pred_Chords_mel',
                                                       'p_root_x' : 'Pred_Root', 
@@ -464,16 +453,10 @@ target_seq_accuracy_mel['model'] = 'Melody'
 
 target_seq_all = pd.concat([target_seq_accuracy_chords, target_seq_accuracy_mel], axis = 0)
 target_seq_all = target_seq_all.sort_values(by = 'Sample_Size_Train_Seq' )
-#%%
-
-
-
-# target_seq_all = target_seq_accuracy_chords.merge(target_seq_accuracy_mel, left_on = ['Target_Seq', 'Target_Seq_train', 'Seq_Sample_Size', 'Sample_Size_Train_Seq'], right_on = ['Target_Seq', 'Target_Seq_train', 'Seq_Sample_Size', 'Sample_Size_Train_Seq'], how = 'left')
 
 #%%
-
-
-#result_song = song_analysis(result_table_all, 197, model_name, model_name_mel)
+song_id = 197
+result_song = song_analysis(result_table_all, song_id, model_name, model_name_mel)
 
 # histogram of test chords
 # result_table['t_root'].value_counts().plot(kind='bar')
@@ -491,17 +474,6 @@ create_save_matrix(result_table_all, 'added_note_T', 'Pred_added_note_mel',  '_a
 
 #%% Make plots
 # x and y given as array_like objects
-
-
-
-# F_score_c = F_score_chords.loc[F_score_chords['Sample_Size_Train']>400]
-
-# fig2 = px.scatter(result_table, x="Song_Length", y='Song_Accuracy')
-# fig3 = px.scatter(Acc_chord_idx, x="Chord_idx", y='Chord_Accuracy', size = 'Sample_Size')
-
-# fig5 = px.scatter(F_score, x = 'Sample_Size_Train', y = 'f_score')
-# fig6 = px.scatter(target_seq_accuracy, x = 'Target_Seq', y = 'Seq_Accuracy', size = 'Seq_Sample_Size')   
-# fig7 = px.scatter(target_seq_accuracy, x = 'Seq_Sample_Size', y = 'Seq_Accuracy')   
 
 def scatter(df, x_var, y_var, title, xlabel, ylabel, size= None, hover_name = None, color = None, color_name= None):
     if color == None and size!=None:
@@ -542,10 +514,8 @@ def scatter(df, x_var, y_var, title, xlabel, ylabel, size= None, hover_name = No
 
 pio.renderers.default='browser'
 
-
-F_score_mel = F_score_mel.loc[F_score_mel['Sample_Size_x']>5]
-
 # "Chord F-score in the melody model weigthed by training chord appearance"
+F_score_mel = F_score_mel.loc[F_score_mel['Sample_Size_x']>5]
 plot_f_score = scatter(F_score_mel.sort_values(by = 'Target_Chords'),
                        'Target_Chords', 'f_score', None,
                        'Target Chords', 'F-score (%)', size = "Sample_Size_Train" )    
@@ -566,17 +536,5 @@ target_seq_plot = scatter(target_seq_all.loc[target_seq_all['Seq_Sample_Size']>1
                         color_name = 'Model Trained')  
 
 acc_chord_idx.show()
-
 plot_f_score.show()
-
 target_seq_plot.show()
-
-#%%
-
-pio.renderers.default='browser'
-
-seq_acc = scatter(target_seq_accuracy_mel, 'Seq_Sample_Size', 'Seq_Accuracy',                        
-                  "Chord sequence accuracy vs its sample size in test set",
-                       'Sample size of chord sequence', 'Chord Sequence Accuracy (%)' )  
-
-seq_acc.show()
