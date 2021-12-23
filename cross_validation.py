@@ -166,32 +166,30 @@ def train(args):
 
 def plot_loss(train_losses, val_losses, name='loss.png'):
     """
-    Plots the losses and saves the plot to 'figs_results/loss.png'
+    Plots the losses
     """
     plt.plot(train_losses, label='Train')
     plt.plot(val_losses, label='Validation')
     plt.legend()
     plt.ylabel('Loss')
     plt.xlabel('Epoch')
-    plt.savefig('figs_results/' + name)
     plt.show()
 
 def plot_accuracy(train_accuracies, val_accuracies, name='acc.png'):
     """
-    Plots the accuracies and saves the plot to 'figs_results/acc.png'
+    Plots the accuracies
     """
     plt.plot(train_accuracies, label='Train')
     plt.plot(val_accuracies, label='Validaton')
     plt.ylabel('Accuracy (%)')
     plt.xlabel('Epoch')
     plt.legend()
-    plt.savefig('figs_results/' + name)
     plt.show()
 
 
 def plot_losses(train_losses, val_losses, name='loss.png'):
     """
-    Plots the losses and saves the plot to 'figs_results/loss.png'
+    Plots the losses of all k-folds
     """
     for i in range(len(train_losses)):
         plt.plot(train_losses[i], label='Train_%d' % i)
@@ -202,12 +200,11 @@ def plot_losses(train_losses, val_losses, name='loss.png'):
     plt.legend()
     plt.ylabel('Loss')
     plt.xlabel('Epoch')
-    plt.savefig('figs_results/' + name)
     plt.show()
 
 def plot_accuracies(train_accuracies, val_accuracies, name='acc.png'):
     """
-    Plots the accuracies and saves the plot to 'figs_results/acc.png'
+    Plots the accuracies of all k-folds
     """
     for i in range(len(train_accuracies)):
         plt.plot(train_accuracies[i], label='Train_%d' % i)
@@ -218,7 +215,6 @@ def plot_accuracies(train_accuracies, val_accuracies, name='acc.png'):
     plt.ylabel('Accuracy (%)')
     plt.xlabel('Epoch')
     plt.legend()
-    plt.savefig('figs_results/' + name)
     plt.show()
 
 

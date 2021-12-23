@@ -1,15 +1,12 @@
 from torch.utils.data import DataLoader
-import torch.nn as nn
 import torch.optim as optim
 import torch
-import torch.nn.functional as F
 import numpy as np
 import matplotlib.pyplot as plt
 import sys
 sys.path.append('./data/')
 from multi_hot_encoding import get_dataset_multi_hot
-from models.lstm_chord_models import LSTMChord, LSTMChordEmbedding, LSTMChordEmbedding_Multihot
-from models.lstm_melody_models import LSTM_Multihot, LSTM_Multihot_MLP
+from models.lstm_melody_models import LSTM_Multihot
 from argparse import ArgumentParser
 from helpers import *
 import pickle
@@ -123,7 +120,6 @@ def train(args):
     plt.legend()
     plt.ylabel('Loss')
     plt.xlabel('Epoch')
-    plt.savefig('figs_results/loss.png')
     plt.show()
 
     plt.plot(train_accuracies, label='Train')
@@ -131,7 +127,6 @@ def train(args):
     plt.ylabel('Accuracy (%)')
     plt.xlabel('Epoch')
     plt.legend()
-    plt.savefig('figs_results/acc.png')
     plt.show()
 
     if args.save_path is not None:

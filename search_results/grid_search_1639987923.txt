@@ -1,5 +1,0 @@
-Grid search results:
-Dataset 7	Embed dim: 192	Layers: 2	Train acc: 92.26	Val acc: 61.31	Epochs: 57
-Dataset 7	Embed dim: 192	Layers: 3	Train acc: 90.50	Val acc: 60.90	Epochs: 90
-
-Best Validation accuracy: 61.31	Embed dim: 192	Layers: 2

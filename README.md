@@ -11,14 +11,8 @@ Group Members:
 
     .
     ├── data                                # Contains the file to preprocess the data
-    │   ├── datasets                        # Contains the differenct encoded datasets
-    │   |   ├── dataset1.pickle             # Only chords
-    │   |   ├── dataset4.pickle             # Chords + Melody
-    │   |   ├── dataset5.pickle             # Chords + Bass
-    │   |   ├── dataset6.pickle             # Chords + Melody + Bass
-    │   |   ├── dataset7.pickle             # Chords + Melody + Duration weighted
-    │   |   ├── dataset8.pickle             # Chords + Melody weighted
-    │   ├── Chord_vocab2.py                 # Creates .csv files that represent the chord vocabulary
+    |   ├── chord_map.pkl                   # Map of the chord vocabulary
+    │   ├── Chord_vocab.py                  # Creates .csv files that represent the chord vocabulary
     │   ├── combine_melody_beats.py         # Combines melody with beats table
     │   ├── dataset.py                      # Defines the torch Datasets
     │   ├── multi_hot_encoding.py           # Creates the different Datasets
@@ -27,45 +21,32 @@ Group Members:
 
     ├── models                              # 
     │   ├── trained_models                  # 
-    │   |   ├── optimized_192_2_dataset_1   # 
-    │   |   ├── optimized_192_2_dataset_4   # 
-    │   |   ├── optimized_192_2_dataset_5   #
-    │   |   ├── optimized_192_2_dataset_6   # 
-    │   |   ├── optimized_192_2_dataset_7   # 
-    │   |   ├── optimized_192_2_dataset_8   # 
-    │   ├── lstm_chord_models.py            # 
-    │   ├── lstm_melody_models.py           # 
-    │   ├── chord_map.pkl                   # 
+    │   |   ├── 1_Baseline                  # Model containing only the encoded chords
+    │   |   ├── 2_Melody                    # Encoded chords + Melody
+    │   |   ├── 3_Bass                      # Encoded chords + Bass
+    │   |   ├── 4_Melody_Bass               # Encoded chords + Melody + Bass
+    │   |   ├── 5_Melody_Duration           # Encoded chords + Melody weighted with duration
+    │   |   ├── 6_Melody_Weighted           # Encoded chords + Melody weighted w/o duration
+    │   ├── lstm_chord_models.py            # Models for the Baseline
+    │   ├── lstm_melody_models.py           # Models for the Melody encoding
 
     ├── report                              # Location of the report folder
     │   ├── JazzChordPredictionLSTM_MND.pdf # Generated .pdf file of our report
     
-    ├── scripts                             # 
-    │   ├── costs.py                        # Cost functions
-    │   ├── cross_val_helpers.py            # Helpers for cross_validation.py
-    │   ├── implementations.py              # Implementations of ML methods requested
-    │   ├── plots.py                        # Visualizations
-    │   ├── proj1_helpers.py                # Helpers
-    
     ├── README.md                           # README
     
-    └── cross_validation.py                 # Perform hyperparameter search with k-fold cross-validation
+    └── cross_validation.py                 # Uses k-fold cross-validation to get average accuracy
     
-    └── helpers.py                          # Data cleaning, transformation and augmentation
+    └── helpers.py                          # Contains helper functions for the train and cross_validation file such as calculating the loss and accuracy
 
-    └── hp_search.py                        # Data cleaning, transformation and augmentation
+    └── hp_search.py                        # Uses random or grid search to find best hyperparameters
 
-    └── load_model.py                       # Train our best model and generate submission
+    └── load_model.py                       # Loads a selected model
+
+    └── qualitative_analysis.py             # Analysis between Baseline and Melody
+
+    └── train.py                            # Trains a given model
+
     
 ## Running
 
-Firstly, make sure to download the train and test data of the challenge at https://www.aicrowd.com/challenges/epfl-machine-learning-higgs and put it in the ```./data``` foler. The files should be named ```test.csv``` and ````train.csv```.
-
-Our best model is trained by ridge regression, achieving an 82.6% test accuracy. For full details on model selection as well as data processing, please check the report.
-
-To train the model and generate predictions on test data, execute:
-
-``` 
-python run.py
-```
-The prediction will then be saved to the file ```submission.csv``` that can be found under ```./data/submission.csv```.

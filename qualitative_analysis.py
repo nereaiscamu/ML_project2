@@ -18,12 +18,6 @@ import pathlib
 
 # Select model. !! Use according datset, hidden_dim, layers and seed !!
 
-'''
-model_path = 'models/trained_models/optimized_192_2_dataset_4.pth'
-model_name = 'result_analysis/chords_mel_data4'
-dataset = 4
-'''
-
 model_path = 'models/trained_models/optimized_192_2_dataset_1.pth'
 model_name = 'result_analysis/3hot_chords_only'
 dataset = 1
@@ -343,7 +337,6 @@ def song_analysis(df, song_id, model_name, model_name_mel):
     if not os.path.exists(path):
         # Create a new directory because it does not exist 
         os.makedirs(path)
-        print("The new directory is created!")
     result_song_simple.to_csv(pathlib.os.path.join(path, 'Model Predictions Compared.csv'), 
                       sep=';', header=True, index=False)
     return result_song
