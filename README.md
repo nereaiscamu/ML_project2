@@ -15,7 +15,7 @@ Group Members:
     │   ├── dataset.py                      # Defines the torch Datasets
     │   ├── multi_hot_encoding.py           # Creates the different Datasets
     │   ├── wjazzd.db                       # Original Weimar Jazz Database
-    │   ├── datasets						# Folder to save the datasets when training/loading the models    
+    │   ├── datasets			    # Folder to save the datasets when training/loading the models    
 
     ├── models                              # 
     │   ├── trained_models                  # 
@@ -41,7 +41,7 @@ Group Members:
 	
 ## Run the models
 
-To check the different models' accuracy, load the models and generate the datasets by running ```run.py```. There, every dataset and model will be loaded from its generated and saved ```.pickle``` and ```.pth``` files. Then, the accuracies will be calculated and displayed in the terminal resulting in the following table.
+To check the different models' accuracy, load the models and generate the datasets by running ```python run.py```. There, every dataset and model will be loaded from its generated and saved ```.pickle``` and ```.pth``` files. Then, the accuracies will be calculated and displayed in the terminal resulting in the following table.
 
 | Model           | Test accuracy |
 |-----------------|:-------------:|
@@ -55,7 +55,7 @@ To check the different models' accuracy, load the models and generate the datase
 
 ## Training models
 
-To train one of the models, from the command line type ```train.py --dataset=dataset_id```, where dataset_id is the index preceding the different models listed in trained models. Also, if the dataset has been previously generated, add as an argument ```--use-saved-dataset=True```.
+To train one of the models, from the command line run ```python train.py --dataset dataset_id```, where dataset_id is the index preceding the different models listed in trained models. Also, if the dataset has been previously generated, add as an argument ```--use-saved-dataset True```.
 
 The following arguments can be passed to ```train.py```:
 
