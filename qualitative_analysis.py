@@ -86,18 +86,16 @@ def create_result_table(song_list, song_length, song_accuracy, preds, targets):
         result_song['Chord_idx'] = range(1, len(target)+1)
         result_song['Target_Chords'] = target
         result_song['Pred_Chords'] = preds[i]
+        prev_chord = ['None']
+        for z in range(1, len(target)):
+            prev_chord.append(result_song['Target_Chords'][z-1])
+        result_song['Previous_target'] = prev_chord
         result_table = pd.concat([result_table, result_song], axis=0)
 
     result_table = result_table.merge(results_numbers, left_on='Test_sample_ID', right_on='Test_sample_ID')
     result_table.loc[result_table['Target_Chords'] == result_table['Pred_Chords'], 'Correct'] = 1
     result_table.loc[result_table['Target_Chords'] != result_table['Pred_Chords'], 'Correct'] = 0
-    
-    prev_chord = ['None']
-    for i in range(1, len(result_table['Target_Chords'])):
-        prev_chord.append(result_table['Target_Chords'][i-1])
-        
-    result_table['Previous_target'] = prev_chord
-    result_table['Target_Seq'] =  result_table['Previous_target'].str.cat(result_table['Target_Chords'])
+    result_table['Target_Seq'] =  result_table['Previous_target'].str.cat(result_table['Target_Chords'], sep = ' - ')
 
     # compute accuracy when previous chord was correct
     result_table['correct_prev_c'] = result_table.Correct.shift(1) * result_table.Correct
@@ -117,16 +115,32 @@ def create_train_table(dataset, seed):
         input_song['Train_sample_ID'] = np.repeat(i, len(j))
         input_song['Chord_idx'] = range(1, len(j)+1)
         input_song['Target_Chords_Train'] = j
+        Prev_chord  = ['None']
+        for z in range(1, len(j)):
+            Prev_chord.append(input_song['Target_Chords_Train'][z-1])
+        input_song['Prev_chord'] = Prev_chord
         train_table = pd.concat([train_table, input_song], axis=0)
+        
+    train_table['Target_Seq_train'] =  train_table['Prev_chord'].str.cat(train_table['Target_Chords_Train'],  sep = ' - ')
     return train_table
         
 
-def train_sample_size_chords(train_table):    
+
+
+def train_sample_size_chords(train_table, size_seq = False):    
     train_chord_size = train_table
-    train_chord_size['Target_Chords_Train2'] = train_chord_size['Target_Chords_Train'] 
-    train_chord_size = train_chord_size.groupby(
-        by=["Target_Chords_Train"]).agg({'Target_Chords_Train2': num_chords }).reset_index()
-    train_chord_size = train_chord_size.rename(columns={ 'Target_Chords_Train2': "Sample_Size_Train"})
+    if size_seq == False:
+        train_chord_size['Target_Chords_Train2'] = train_chord_size['Target_Chords_Train']      
+        train_chord_size = train_chord_size.groupby(
+            by=["Target_Chords_Train"]).agg({'Target_Chords_Train2': num_chords }).reset_index()
+        train_chord_size = train_chord_size.rename(columns={ 'Target_Chords_Train2': "Sample_Size_Train"})
+    if size_seq == True:
+        train_chord_size['Target_Seq_train2'] = train_chord_size['Target_Seq_train']      
+        train_chord_size = train_chord_size.groupby(
+            by=["Target_Seq_train"]).agg({'Target_Seq_train2': num_chords }).reset_index()
+        train_chord_size = train_chord_size.rename(columns={ 'Target_Seq_train2': "Sample_Size_Train_Seq"})
+            
+        
     return train_chord_size
 
    
@@ -183,13 +197,17 @@ def accuracy_chord_idx(result_table):
     return Acc_chord_idx
 
 
-def target_seq_accuracy(result_table):
+def target_seq_accuracy(result_table, train_chord_size_seq):
     target_seq_accuracy = result_table.groupby(
         by=["Target_Seq"]).agg({'Correct': [num_chords, correct_chords] }).reset_index()
     target_seq_accuracy.columns = ["_".join(x) for x in target_seq_accuracy.columns.values]
     target_seq_accuracy = target_seq_accuracy.rename(columns={'Target_Seq_': 'Target_Seq', 'Correct_<lambda_0>': "Seq_Sample_Size", 
                                     'Correct_<lambda_1>': "Seq_Accuracy"})
-    target_seq_accuracy = target_seq_accuracy.sort_values(by = 'Seq_Accuracy')
+    target_seq_accuracy = target_seq_accuracy.merge(train_chord_size_seq, left_on = 'Target_Seq', 
+                                                    right_on = 'Target_Seq_train',  how='left')
+    # target_seq_accuracy = target_seq_accuracy.sort_values(by = 'Seq_Accuracy')
+    target_seq_accuracy['Sample_Size_Train_Seq'].replace(np.nan, 0, inplace=True)
+
     return target_seq_accuracy
 
 
@@ -377,7 +395,12 @@ def compare_dominent_with_minor(targets, preds, preds_mel):
 #%% Creating the main tables
 
 train_table = create_train_table(dataset, seed)
-train_chord_size = train_sample_size_chords(train_table)
+
+#%%
+train_chord_size = train_sample_size_chords(train_table, size_seq = False)
+train_chord_size_seq=train_sample_size_chords(train_table, size_seq = True)
+
+#%%
 
 song_acc_diff = compare_accuracies_table(song_list, song_length, song_accuracy,song_list_mel, song_length_mel, song_accuracy_mel)
 song_acc_diff.to_csv(pathlib.os.path.join(result_analysis_path,'Song Accuracy comparison.csv'), 
@@ -437,8 +460,18 @@ F_score_mel = F_score(result_table_mel, train_chord_size)
 Acc_chord_idx = accuracy_chord_idx(result_table)
 Acc_chord_idx_mel = accuracy_chord_idx(result_table_mel)
 
-target_seq_accuracy_chords= target_seq_accuracy(result_table)
-target_seq_accuracy_mel = target_seq_accuracy(result_table_mel)
+target_seq_accuracy_chords= target_seq_accuracy(result_table, train_chord_size_seq)
+target_seq_accuracy_chords['model'] = 'Chords_Only'
+target_seq_accuracy_mel = target_seq_accuracy(result_table_mel, train_chord_size_seq)
+target_seq_accuracy_mel['model'] = 'Melody'
+
+target_seq_all = pd.concat([target_seq_accuracy_chords, target_seq_accuracy_mel], axis = 0)
+target_seq_all = target_seq_all.sort_values(by = 'Sample_Size_Train_Seq' )
+#%%
+
+
+
+# target_seq_all = target_seq_accuracy_chords.merge(target_seq_accuracy_mel, left_on = ['Target_Seq', 'Target_Seq_train', 'Seq_Sample_Size', 'Sample_Size_Train_Seq'], right_on = ['Target_Seq', 'Target_Seq_train', 'Seq_Sample_Size', 'Sample_Size_Train_Seq'], how = 'left')
 
 #%%
 
@@ -452,11 +485,11 @@ target_seq_accuracy_mel = target_seq_accuracy(result_table_mel)
 create_save_matrix(result_table_all, 't_root', 'Pred_Root',  '_roots_crossmatrix.png', model_name, title=None, show=True, norm='index')  #  norm='index' makes the normalization by rows. Delete if normalization by entire matrix is wanted
 create_save_matrix(result_table_all, 't_root', 'Pred_Root_mel',  '_roots_crossmatrix.png', model_name_mel, title=None, show=True, norm='index')
 
-create_save_matrix(result_table_all, 'triad_T', 'Pred_triad_form',  '_triad_form_crossmatrix.png', model_name, title=None, show=True)
-create_save_matrix(result_table_all, 'triad_T', 'Pred_triad_form_mel',  '_triad_form_crossmatrix.png', model_name_mel, title=None, show=True)
+create_save_matrix(result_table_all, 'triad_T', 'Pred_triad_form',  '_triad_form_crossmatrix.png', model_name, title=None, show=True, norm='index')
+create_save_matrix(result_table_all, 'triad_T', 'Pred_triad_form_mel',  '_triad_form_crossmatrix.png', model_name_mel, title=None, show=True, norm='index')
 
-create_save_matrix(result_table_all, 'added_note_T', 'Pred_added_note',  '_added_note_crossmatrix.png', model_name, title=None, show=True)
-create_save_matrix(result_table_all, 'added_note_T', 'Pred_added_note_mel',  '_added_note_crossmatrix.png', model_name_mel, title=None, show=True)
+create_save_matrix(result_table_all, 'added_note_T', 'Pred_added_note',  '_added_note_crossmatrix.png', model_name, title=None, show=True, norm='index')
+create_save_matrix(result_table_all, 'added_note_T', 'Pred_added_note_mel',  '_added_note_crossmatrix.png', model_name_mel, title=None, show=True, norm='index')
   
 
 #%% Make plots
@@ -473,9 +506,9 @@ create_save_matrix(result_table_all, 'added_note_T', 'Pred_added_note_mel',  '_a
 # fig6 = px.scatter(target_seq_accuracy, x = 'Target_Seq', y = 'Seq_Accuracy', size = 'Seq_Sample_Size')   
 # fig7 = px.scatter(target_seq_accuracy, x = 'Seq_Sample_Size', y = 'Seq_Accuracy')   
 
-def scatter(df, x_var, y_var, title, xlabel, ylabel, size= None, color = None, color_name= None):
+def scatter(df, x_var, y_var, title, xlabel, ylabel, size= None, hover_name = None, color = None, color_name= None):
     if color == None and size!=None:
-        fig = px.scatter(df, x= x_var, y= y_var, size = size, hover_name= size,
+        fig = px.scatter(df, x= x_var, y= y_var, size = size, hover_name= size,size_max=60,
                  labels={
                      x_var: xlabel,
                      y_var: ylabel},
@@ -488,7 +521,7 @@ def scatter(df, x_var, y_var, title, xlabel, ylabel, size= None, color = None, c
                  title = title)
     if (color != None and size != None):
         fig = px.scatter(df, x= x_var, y= y_var, color = color, size = size ,
-                         hover_name= size, size_max=60,
+                         hover_name= size,
                  labels={
                      x_var: xlabel,
                      y_var: ylabel,
@@ -501,6 +534,10 @@ def scatter(df, x_var, y_var, title, xlabel, ylabel, size= None, color = None, c
                      y_var: ylabel,
                      color : color_name},
                  title = title)
+    fig.update_layout(
+        font=dict(
+            size=23))
+
     return fig 
 
 
@@ -509,26 +546,40 @@ def scatter(df, x_var, y_var, title, xlabel, ylabel, size= None, color = None, c
 pio.renderers.default='browser'
 
 
-F_score_mel = F_score_mel.loc[F_score_mel['Sample_Size_x']>10]
+F_score_mel = F_score_mel.loc[F_score_mel['Sample_Size_x']>5]
 
+# "Chord F-score in the melody model weigthed by training chord appearance"
 plot_f_score = scatter(F_score_mel.sort_values(by = 'Target_Chords'),
-                       'Target_Chords', 'f_score', "Chord F-score in the melody model weigthed by training chord appearance",
+                       'Target_Chords', 'f_score', None,
                        'Target Chords', 'F-score (%)', size = "Sample_Size_Train" )    
 
+# "Chord accuracy vs chord index in the song sequence"
 acc_chord_idx = scatter(Acc_chord_idx, 'Chord_idx', 'Chord_Accuracy', 
-                        "Chord accuracy vs chord index in the song sequence",
-                       'Chords Index', 'Chord Accuracy (%)', size = "Sample_Size" )    
+                        None,
+                       'Chords Index', 'Chord Accuracy (%)', size = "Sample_Size" )  
+# 'Chord accuracy vs chord sequence frequency in training'
+target_seq_plot = scatter(target_seq_all.loc[target_seq_all['Seq_Sample_Size']>15], 
+                          'Sample_Size_Train_Seq', 'Seq_Accuracy', 
+                          None, 
+                          'Chord sequence appearance in training', 
+                          'Chord accuracy (%)', 
+                          size = 'Seq_Sample_Size', 
+                          hover_name = 'model',
+                        color = 'model', 
+                        color_name = 'Model Trained')  
 
 acc_chord_idx.show()
 
-             
-
-# fig2.show()
-# fig3.show()
 plot_f_score.show()
-# fig5.show()
-# fig6.show()
-# fig7.show()
 
+target_seq_plot.show()
 
+#%%
 
+pio.renderers.default='browser'
+
+seq_acc = scatter(target_seq_accuracy_mel, 'Seq_Sample_Size', 'Seq_Accuracy',                        
+                  "Chord sequence accuracy vs its sample size in test set",
+                       'Sample size of chord sequence', 'Chord Sequence Accuracy (%)' )  
+
+seq_acc.show()
