@@ -200,7 +200,7 @@ def get_dataset_baseline(beats):
 
 # *************** DATASET CHORD + MELODY/BASS ENCODING *******************
 
-def get_dataset_melody(melody, beats):
+def get_dataset_melody(melody, beats, choice):
     """
     Dataset Melody: Multi-hot. Combination of 3 One-Hot vectors for chord encoding + Melody and Bass encoding
         (1): Root pitch and '#'. Vocab size = 13
@@ -236,8 +236,12 @@ def get_dataset_melody(melody, beats):
     print('\t(1): Root pitch and #. Vocab size of %d' % len(unique_pitch))
     print('\t(2): triad. Vocab size of %d' % len(unique_triad))
     print('\t(3): Extra note. Vocab size of %d' % len(unique_added_note))
-    print('\t(4): Melody. Vocab size of %d' % len(unique_notes))
-    print('\t(5): Bass pitch. Vocab size of %d\n' % len(unique_notes))
+    if choice != 3:
+        print('\t(4): Melody. Vocab size of %d' % len(unique_notes))
+    else:
+        print('\t(4): Bass pitch. Vocab size of %d\n' % len(unique_notes))
+    if choice == 4:
+        print('\t(5): Bass pitch. Vocab size of %d\n' % len(unique_notes))
 
     return beats_mel, vocab_sizes, target_size
 
@@ -276,7 +280,7 @@ def get_dataset_multi_hot(choice=1, val_split=0.1, test_split=0.1, seed=42, get_
     if choice == 1:
         beats, vocab_sizes, target_size = get_dataset_baseline(beats_raw)
     else:
-        beats, vocab_sizes, target_size = get_dataset_melody(melody_raw, beats_raw)
+        beats, vocab_sizes, target_size = get_dataset_melody(melody_raw, beats_raw, choice)
 
     sequences = []          # store chord as multi-hot
     target_sequence = []    # store chord as one-hot

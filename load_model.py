@@ -4,7 +4,7 @@ import sys
 sys.path.append('./data/')
 from multi_hot_encoding import get_dataset_multi_hot
 from models.lstm_melody_models import LSTM_Multihot
-from train import evaluate_model
+from helpers import evaluate_model
 import pickle
 import pandas as pd
 
@@ -40,9 +40,9 @@ def load_model(load_path, dataset, hidden_dim, layers, seed=42, song_input=True)
         chord_map = pickle.load(f)
         chord_map = dict((v,k) for k,v in chord_map.items())
     
-    song_list = list()
-    song_length = list()
-    song_accuracy = list()
+    tune_list = list()
+    tune_length = list()
+    tune_accuracy = list()
     preds_total = [[]]
     targets_total = [[]]
 
@@ -64,9 +64,9 @@ def load_model(load_path, dataset, hidden_dim, layers, seed=42, song_input=True)
         preds_chord = [chord_map[key.item()] for key in preds]
         targets_chord = [chord_map[key.item()] for key in targets[mask]]
         
-        song_list.append(tune_ids[test_split[i]])
-        song_length.append(int(lengths[0]))
-        song_accuracy.append(round(float(acc),2))
+        tune_list.append(tune_ids[test_split[i]])
+        tune_length.append(int(lengths[0]))
+        tune_accuracy.append(round(float(acc),2))
         preds_total.append(pd.DataFrame(preds_chord))
         targets_total.append(pd.DataFrame(targets_chord))
         print('Test song %d\tSong ID: %d\tLength: %d\tAccuracy: %.2f' % (i, tune_ids[test_split[i]], lengths[0], acc))
@@ -104,7 +104,7 @@ def load_model(load_path, dataset, hidden_dim, layers, seed=42, song_input=True)
         print(targets_chord)
         print('\nAccuracy in this song: %.2f\n' % acc.item())
     
-    return song_list, song_length, song_accuracy, preds_total, targets_total
+    return tune_list, tune_length, tune_accuracy, preds_total, targets_total
 
 
 def load_training_data(dataset, seed=42):
