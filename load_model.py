@@ -17,7 +17,7 @@ def load_model(load_path, dataset, hidden_dim, layers, seed=42, song_input=True)
     device = torch.device("cuda" if cuda else "cpu")
     device = torch.device("cpu")
     
-    train_dataset, val_dataset, test_dataset, input_size, target_size, song_ids = get_dataset_multi_hot(choice=dataset, seed=seed, get_tune_ids=True)
+    train_dataset, val_dataset, test_dataset, input_size, target_size, tune_ids = get_dataset_multi_hot(choice=dataset, seed=seed, get_tune_ids=True)
     
     len_sequences = len(train_dataset) + len(val_dataset) + len(test_dataset)
     random_idxs = np.random.RandomState(seed=seed).permutation(len_sequences)
@@ -64,12 +64,12 @@ def load_model(load_path, dataset, hidden_dim, layers, seed=42, song_input=True)
         preds_chord = [chord_map[key.item()] for key in preds]
         targets_chord = [chord_map[key.item()] for key in targets[mask]]
         
-        song_list.append(song_ids[test_split[i]])
+        song_list.append(tune_ids[test_split[i]])
         song_length.append(int(lengths[0]))
         song_accuracy.append(round(float(acc),2))
         preds_total.append(pd.DataFrame(preds_chord))
         targets_total.append(pd.DataFrame(targets_chord))
-        print('Test song %d\tSong ID: %d\tLength: %d\tAccuracy: %.2f' % (i, song_ids[test_split[i]], lengths[0], acc))
+        print('Test song %d\tSong ID: %d\tLength: %d\tAccuracy: %.2f' % (i, tune_ids[test_split[i]], lengths[0], acc))
     
 
     # Qualitative study of ONE SONG
@@ -108,7 +108,7 @@ def load_model(load_path, dataset, hidden_dim, layers, seed=42, song_input=True)
 
 
 def load_training_data(dataset, seed=42):
-    train_dataset, val_dataset, test_dataset, input_size, target_size, song_ids= get_dataset_multi_hot(choice=dataset, seed=seed, get_song_ids=True)
+    train_dataset, _, _, _, _, _= get_dataset_multi_hot(choice=dataset, seed=seed, get_tune_ids=True)
     
     # Load chord map -- from one-hot to chord name
     with open('Chord_Vocab/chord_map.pkl', 'rb') as f:

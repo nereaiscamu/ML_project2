@@ -19,7 +19,6 @@ Group Members:
     |   ├── chord_map.pkl                   # Map of the chord vocabulary
     |   ├── Chord_vocab.py                  # 
 
-
     ├── data                                # Contains the file to preprocess the data
     │   ├── Chord_vocab.py                  # Creates .csv files that represent the chord vocabulary
     │   ├── combine_melody_beats.py         # Combines melody with beats table
@@ -41,21 +40,15 @@ Group Members:
 
     ├── report                              # Location of the report folder
     │   ├── JazzChordPredictionLSTM_MND.pdf # Generated .pdf file of our report
-    
+
     ├── README.md                           # README
-    
     └── cross_validation.py                 # Uses k-fold cross-validation to get average accuracy
-    
     └── helpers.py                          # Contains helper functions for the train and cross_validation file such as calculating the loss and accuracy
-
     └── hp_search.py                        # Uses random or grid search to find best hyperparameters
-
     └── load_model.py                       # Loads a selected model
-
     └── qualitative_analysis.py             # Analysis between Baseline and Melody
-
+    └── Tune Accuracy comparison.csv        # Accuracy comparison of the Baseline and Melody
     └── train.py                            # Trains a given model
 
-    
 ## Running
 

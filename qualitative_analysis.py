@@ -26,8 +26,6 @@ model_path_mel = 'models/trained_models/2_Melody.pth'
 model_name_mel = 'result_analysis/chords_mel_data4'
 dataset_mel = 2
 
-
-project_path = "C:/Users/nerea/OneDrive/Documentos/GitHub/ML_project2" #to change
 project_path = os.getcwd()
 result_analysis_path = pathlib.os.path.join(project_path,'result_analysis/Report')
 
@@ -305,9 +303,9 @@ def create_save_matrix(df, var1, var2, plot_name, model_name, title=None, show=T
         plt.show(block=False)
         plt.close('all')
     
-    savepath = str(model_name) + str(plot_name)
-    figure = matrix_fig.get_figure()    
-    figure.savefig(savepath, dpi=400)
+    # savepath = str(model_name) + str(plot_name)
+    # figure = matrix_fig.get_figure()   
+    # figure.savefig(savepath, dpi=400)
 
 
 def get_decoded_melody(melid):
@@ -403,8 +401,7 @@ train_chord_size_seq=train_sample_size_chords(train_table, size_seq = True)
 #%%
 
 song_acc_diff = compare_accuracies_table(song_list, song_length, song_accuracy,song_list_mel, song_length_mel, song_accuracy_mel)
-song_acc_diff.to_csv(pathlib.os.path.join(result_analysis_path,'Song Accuracy comparison.csv'), 
-                  sep=';', header=True, index=False)
+song_acc_diff.to_csv('Tune Accuracy comparison.csv', sep=';', header=True, index=False)
 
 result_table, results_numbers = create_result_table(song_list, song_length, song_accuracy, preds, targets)
 result_table_mel, results_numbers_mel = create_result_table(song_list_mel, song_length_mel, song_accuracy_mel, preds_mel, targets_mel )
@@ -446,7 +443,7 @@ if do_conf_matrix_all_songs:
         song_df = root_pitch(result_table[result_table['Test_sample_ID'] == i])
         confusion_matrix_root = pd.crosstab(song_df['t_root'], song_df['p_root'], rownames=['Target'], colnames=['Predicted'], normalize='all').round(4)*100
         title = 'Song test ID ' + str(i) + '. Length: ' + str(results_numbers.at[i, 'Song_Length']) + ' Acc: ' + str(results_numbers.at[i, 'Song_Accuracy'])
-        create_save_matrix(confusion_matrix_root,  'roots_crossmatrix_song_' + str(i) + '.png', 'result_analysis/all_songs/', title=title, show=False)
+        create_save_matrix(confusion_matrix_root,  'roots_crossmatrix_song_' + str(i) + '.png', 'result_analysis/all_songs/', title=title, show=True)
         
 
         
