@@ -1,5 +1,9 @@
 # Improving chord prediction in Jazz music using note information
 
+In this project, we aim to predict the next chord in Jazz music given the history of previous chords using LSTMs. Then, we study whether adding information of the melody boosts the performance compared to using only chord series. Our implementation uses PyTorch.
+
+For more information on the project, please check our [final report](https://github.com/nereaiscamu/ML_project2/blob/main/JazzChordPredictionLSTM_MND.pdf)
+
 This project is part of CS-433 Machine Learning @ EPFL.
 
 Group Members:
